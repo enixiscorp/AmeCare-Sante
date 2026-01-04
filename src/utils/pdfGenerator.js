@@ -51,13 +51,13 @@ export const generatePDF = (invoiceData, totals) => {
   if (invoiceData.phone || invoiceData.email || invoiceData.address) {
     headerY += 3
     if (invoiceData.phone) {
-      headerY = addText(`📞 ${invoiceData.phone}`, headerX, headerY, contentWidth - 60, 9)
+      headerY = addText(`Tel: ${invoiceData.phone}`, headerX, headerY, contentWidth - 60, 9)
     }
     if (invoiceData.email) {
-      headerY = addText(`✉️ ${invoiceData.email}`, headerX, headerY + 3, contentWidth - 60, 9)
+      headerY = addText(`Email: ${invoiceData.email}`, headerX, headerY + 3, contentWidth - 60, 9)
     }
     if (invoiceData.address) {
-      headerY = addText(`📍 ${invoiceData.address}`, headerX, headerY + 3, contentWidth - 60, 9)
+      headerY = addText(`Adresse: ${invoiceData.address}`, headerX, headerY + 3, contentWidth - 60, 9)
     }
   }
 
@@ -121,10 +121,10 @@ export const generatePDF = (invoiceData, totals) => {
     yPosition = addText(invoiceData.clientAddress, margin + 5, yPosition + 3, contentWidth - 10, 9)
   }
   if (invoiceData.clientPhone) {
-    yPosition = addText(`📞 ${invoiceData.clientPhone}`, margin + 5, yPosition + 3, contentWidth - 10, 9)
+    yPosition = addText(`Tel: ${invoiceData.clientPhone}`, margin + 5, yPosition + 3, contentWidth - 10, 9)
   }
   if (invoiceData.clientEmail) {
-    yPosition = addText(`✉️ ${invoiceData.clientEmail}`, margin + 5, yPosition + 3, contentWidth - 10, 9)
+    yPosition = addText(`Email: ${invoiceData.clientEmail}`, margin + 5, yPosition + 3, contentWidth - 10, 9)
   }
   if (invoiceData.clientInsurance) {
     yPosition = addText(`Assurance: ${invoiceData.clientInsurance}`, margin + 5, yPosition + 3, contentWidth - 10, 9)

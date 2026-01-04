@@ -48,8 +48,38 @@ const initialInvoiceData = {
   currency: '€'
 }
 
+// Fonction pour générer le numéro de facture automatique
+const generateInvoiceNumber = () => {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  
+  // Récupérer le dernier numéro depuis localStorage
+  const lastNumberKey = `lastInvoiceNumber_${year}_${month}`
+  const lastNumber = parseInt(localStorage.getItem(lastNumberKey) || '0', 10)
+  const nextNumber = lastNumber + 1
+  
+  // Sauvegarder le nouveau numéro
+  localStorage.setItem(lastNumberKey, nextNumber.toString())
+  
+  return `FAC-${year}-${month}-${String(nextNumber).padStart(3, '0')}`
+}
+
+// Fonction pour initialiser le numéro de facture au chargement
+const getInitialInvoiceNumber = () => {
+  // Si un numéro existe déjà dans le formulaire, ne pas le changer
+  const savedNumber = localStorage.getItem('currentInvoiceNumber')
+  if (savedNumber) {
+    return savedNumber
+  }
+  return generateInvoiceNumber()
+}
+
 function App() {
-  const [invoiceData, setInvoiceData] = useState(initialInvoiceData)
+  const [invoiceData, setInvoiceData] = useState({
+    ...initialInvoiceData,
+    invoiceNumber: getInitialInvoiceNumber()
+  })
   const [activeTab, setActiveTab] = useState('form')
 
   const updateInvoiceData = useCallback((field, value) => {
@@ -130,13 +160,28 @@ function App() {
 
   const handleReset = () => {
     if (window.confirm('Êtes-vous sûr de vouloir réinitialiser toutes les données ?')) {
-      setInvoiceData(initialInvoiceData)
+      // Générer un nouveau numéro de facture à la réinitialisation
+      const newInvoiceNumber = generateInvoiceNumber()
+      localStorage.setItem('currentInvoiceNumber', newInvoiceNumber)
+      setInvoiceData({
+        ...initialInvoiceData,
+        invoiceNumber: newInvoiceNumber
+      })
     }
   }
 
+  // Générer un nouveau numéro de facture quand l'utilisateur télécharge le PDF
   const handleDownloadPDF = () => {
     const totals = calculateTotals()
     generatePDF(invoiceData, totals)
+    
+    // Après téléchargement, générer un nouveau numéro pour la prochaine facture
+    const newInvoiceNumber = generateInvoiceNumber()
+    localStorage.setItem('currentInvoiceNumber', newInvoiceNumber)
+    setInvoiceData(prev => ({
+      ...prev,
+      invoiceNumber: newInvoiceNumber
+    }))
   }
 
   const handleLogoUpload = (event) => {

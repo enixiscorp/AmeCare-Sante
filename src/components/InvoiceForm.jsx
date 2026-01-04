@@ -93,7 +93,7 @@ const InvoiceForm = ({
           </div>
 
           <div className="form-group">
-            <label>N° Facture *</label>
+            <label>N° Facture * <span style={{fontSize: '0.85rem', fontWeight: 'normal', color: '#64748b'}}>(généré automatiquement)</span></label>
             <input
               type="text"
               value={invoiceData.invoiceNumber}
@@ -406,22 +406,39 @@ const InvoiceForm = ({
 
           <div className="form-group">
             <label>Délai de paiement</label>
-            <input
-              type="text"
+            <select
               value={invoiceData.paymentDeadline || ''}
               onChange={(e) => updateInvoiceData('paymentDeadline', e.target.value)}
-              placeholder="30 jours"
-            />
+            >
+              <option value="">Sélectionner un délai</option>
+              <option value="À réception">À réception</option>
+              <option value="7 jours">7 jours</option>
+              <option value="14 jours">14 jours</option>
+              <option value="21 jours">21 jours</option>
+              <option value="30 jours">30 jours</option>
+              <option value="45 jours">45 jours</option>
+              <option value="60 jours">60 jours</option>
+              <option value="90 jours">90 jours</option>
+            </select>
           </div>
 
           <div className="form-group">
             <label>Moyens de paiement acceptés</label>
-            <input
-              type="text"
+            <select
               value={invoiceData.paymentMethods || ''}
               onChange={(e) => updateInvoiceData('paymentMethods', e.target.value)}
-              placeholder="Virement, Chèque, Espèces"
-            />
+            >
+              <option value="">Sélectionner un moyen de paiement</option>
+              <option value="Espèces">Espèces</option>
+              <option value="Chèque">Chèque</option>
+              <option value="Carte cadeau">Carte cadeau</option>
+              <option value="Ticket Restaurant">Ticket Restaurant</option>
+              <option value="Cartes (Visa, Mastercard, Amex, UnionPay)">Cartes (Visa, Mastercard, Amex, UnionPay)</option>
+              <option value="Virement bancaire">Virement bancaire</option>
+              <option value="Mobile Money">Mobile Money</option>
+              <option value="Portefeuilles électroniques (PayPal, Apple Pay, Google Pay)">Portefeuilles électroniques (PayPal, Apple Pay, Google Pay)</option>
+              <option value="Cryptomonnaies">Cryptomonnaies</option>
+            </select>
           </div>
 
           <div className="form-group full-width">
