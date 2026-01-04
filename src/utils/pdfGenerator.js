@@ -152,7 +152,7 @@ export const generatePDF = (invoiceData, totals) => {
 
   yPosition += Math.max(clientLeftY - yPosition, clientRightY - yPosition) + 8
 
-  // Services table - Optimized for A4
+  // Services table - Optimized for A4 and aligned with other sections
   const servicesData = invoiceData.services
     .filter(service => service.designation || service.ref || service.hours > 0 || service.unitPrice > 0)
     .map(service => [
@@ -164,6 +164,16 @@ export const generatePDF = (invoiceData, totals) => {
       `${(service.amount || 0).toFixed(2)} ${invoiceData.currency}`
     ])
 
+  // Calcul des largeurs de colonnes pour s'aligner exactement avec contentWidth
+  // Utiliser exactement contentWidth (170mm) pour correspondre aux autres sections
+  const colRefWidth = 18
+  const colUnitsWidth = 20
+  const colPatientRefWidth = 26
+  const colPUWidth = 30
+  const colMontantWidth = 30
+  // La colonne Désignation prend le reste de l'espace disponible
+  const colDesignationWidth = contentWidth - colRefWidth - colUnitsWidth - colPatientRefWidth - colPUWidth - colMontantWidth
+
   doc.autoTable({
     startY: yPosition,
     head: [['Réf', 'Désignation', 'Unités', 'Réf patient', 'P.U', 'Montant']],
@@ -173,21 +183,23 @@ export const generatePDF = (invoiceData, totals) => {
       fillColor: [37, 99, 235],
       textColor: [255, 255, 255],
       fontStyle: 'bold',
-      fontSize: 8
+      fontSize: 8,
+      halign: 'center'
     },
     bodyStyles: {
-      fontSize: 8
+      fontSize: 7.5,
+      cellPadding: { top: 3, bottom: 3, left: 2, right: 2 }
     },
     columnStyles: {
-      0: { cellWidth: 25 },
-      1: { cellWidth: 'auto' },
-      2: { halign: 'center', cellWidth: 30 },
-      3: { cellWidth: 35 },
-      4: { halign: 'right', cellWidth: 35 },
-      5: { halign: 'right', cellWidth: 35 }
+      0: { cellWidth: colRefWidth, halign: 'left' },
+      1: { cellWidth: Math.max(colDesignationWidth, 40), halign: 'left' },
+      2: { cellWidth: colUnitsWidth, halign: 'center' },
+      3: { cellWidth: colPatientRefWidth, halign: 'left' },
+      4: { cellWidth: colPUWidth, halign: 'right' },
+      5: { cellWidth: colMontantWidth, halign: 'right' }
     },
     margin: { left: margin, right: margin },
-    tableWidth: 'wrap'
+    tableWidth: contentWidth
   })
 
   yPosition = doc.lastAutoTable.finalY + 8
@@ -218,10 +230,10 @@ export const generatePDF = (invoiceData, totals) => {
     yPosition += 12
   }
 
-  // Totals section
+  // Totals section - Aligned with table and other sections
   const totalsY = yPosition
   const totalsWidth = 100
-  const totalsX = pageWidth - margin - totalsWidth
+  const totalsX = margin + contentWidth - totalsWidth // Align with right edge of content area
 
   doc.setFontSize(10)
   
