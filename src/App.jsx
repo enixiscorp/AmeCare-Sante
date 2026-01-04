@@ -9,7 +9,7 @@ import { installPWA, isPWAInstalled, canInstallPWA } from './utils/pwaInstall'
 const initialInvoiceData = {
   // Header
   logo: null,
-  structureName: '',
+  structureName: 'AmeCare Santé',
   activity: '',
   phone: '',
   email: '',
@@ -81,7 +81,15 @@ function App() {
   const [invoiceData, setInvoiceData] = useState(() => {
     // Charger la facture sauvegardée ou créer une nouvelle
     const saved = loadCurrentInvoice()
-    return saved ? { ...saved, invoiceNumber: saved.invoiceNumber || getInitialInvoiceNumber() } : {
+    if (saved) {
+      // S'assurer que le nom de la structure est toujours "AmeCare Santé"
+      return { 
+        ...saved, 
+        invoiceNumber: saved.invoiceNumber || getInitialInvoiceNumber(),
+        structureName: 'AmeCare Santé'
+      }
+    }
+    return {
       ...initialInvoiceData,
       invoiceNumber: getInitialInvoiceNumber()
     }
@@ -146,7 +154,10 @@ function App() {
   const handleLoadInvoice = (invoiceNumber) => {
     const invoice = loadInvoice(invoiceNumber)
     if (invoice) {
-      setInvoiceData(invoice)
+      setInvoiceData({
+        ...invoice,
+        structureName: 'AmeCare Santé' // Forcer le nom à rester "AmeCare Santé"
+      })
       setShowInvoiceList(false)
       setActiveTab('form')
     }
@@ -162,6 +173,12 @@ function App() {
   const updateInvoiceData = useCallback((field, value) => {
     setInvoiceData(prev => {
       const newData = { ...prev }
+      
+      // Empêcher la modification du nom de la structure
+      if (field === 'structureName') {
+        newData.structureName = 'AmeCare Santé'
+        return newData
+      }
       
       if (field.includes('.')) {
         const [parent, child] = field.split('.')
@@ -245,7 +262,8 @@ function App() {
       localStorage.setItem('currentInvoiceNumber', newInvoiceNumber)
       setInvoiceData({
         ...initialInvoiceData,
-        invoiceNumber: newInvoiceNumber
+        invoiceNumber: newInvoiceNumber,
+        structureName: 'AmeCare Santé' // S'assurer que le nom reste "AmeCare Santé"
       })
     }
   }

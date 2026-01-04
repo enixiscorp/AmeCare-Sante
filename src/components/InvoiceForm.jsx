@@ -45,9 +45,9 @@ const InvoiceForm = ({
             <label>Nom de la structure *</label>
             <input
               type="text"
-              value={invoiceData.structureName}
-              onChange={(e) => updateInvoiceData('structureName', e.target.value)}
-              placeholder="AmeCare Santé"
+              value={invoiceData.structureName || 'AmeCare Santé'}
+              readOnly
+              className="readonly-input"
               required
             />
           </div>

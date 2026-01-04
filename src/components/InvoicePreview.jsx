@@ -31,7 +31,7 @@ const InvoicePreview = ({ invoiceData, totals, onDownloadPDF, onReset }) => {
               <img src={invoiceData.logo} alt="Logo" className="invoice-logo" />
             )}
             <div>
-              <h1 className="structure-name">{invoiceData.structureName || 'Nom de la structure'}</h1>
+              <h1 className="structure-name">{invoiceData.structureName || 'AmeCare Santé'}</h1>
               {invoiceData.activity && <p className="activity">{invoiceData.activity}</p>}
               <div className="contact-info">
                 {invoiceData.phone && <p>Tel: {invoiceData.phone}</p>}

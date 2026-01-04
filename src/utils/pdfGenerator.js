@@ -48,7 +48,7 @@ export const generatePDF = (invoiceData, totals) => {
   const headerInfoWidth = contentWidth - (invoiceData.logo ? logoWidth + 8 : 0) - 80 // Reserve space for right side
 
   headerY = addText(
-    invoiceData.structureName || 'Nom de la structure',
+    invoiceData.structureName || 'AmeCare Santé',
     headerX,
     headerY,
     headerInfoWidth,
