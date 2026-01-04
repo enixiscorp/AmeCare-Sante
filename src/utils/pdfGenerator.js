@@ -30,15 +30,19 @@ export const generatePDF = (invoiceData, totals) => {
 
   // Header - Logo and Company Info
   let logoHeight = 0
-  const logoWidth = 45
-  const logoMaxHeight = 35
+  const logoWidth = 50
+  const logoMaxHeight = 40
   
   if (invoiceData.logo) {
     try {
-      doc.addImage(invoiceData.logo, 'PNG', margin, yPosition, logoWidth, logoMaxHeight)
+      // L'image a déjà été redimensionnée et optimisée par imageResizer
+      // On s'assure qu'elle s'affiche correctement avec les bonnes proportions
+      doc.addImage(invoiceData.logo, 'PNG', margin, yPosition, logoWidth, logoMaxHeight, undefined, 'FAST')
       logoHeight = logoMaxHeight
     } catch (e) {
       console.error('Error loading logo:', e)
+      // Si l'image n'est pas valide, continuer sans logo
+      logoHeight = 0
     }
   }
 

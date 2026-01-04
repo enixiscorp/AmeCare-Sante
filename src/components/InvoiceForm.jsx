@@ -8,7 +8,8 @@ const InvoiceForm = ({
   addService,
   removeService,
   handleLogoUpload,
-  totals
+  totals,
+  onPreviewClick
 }) => {
   return (
     <div className="invoice-form">
@@ -452,6 +453,17 @@ const InvoiceForm = ({
           </div>
         </div>
       </section>
+
+      {/* Bouton Aperçu en bas du formulaire */}
+      <div className="form-footer-actions">
+        <button 
+          type="button"
+          className="btn-preview-large"
+          onClick={onPreviewClick}
+        >
+          👁️ Voir l'aperçu de la facture
+        </button>
+      </div>
     </div>
   )
 }

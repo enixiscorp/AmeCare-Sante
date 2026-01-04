@@ -27,3 +27,4 @@ export const canInstallPWA = () => {
   return 'serviceWorker' in navigator && 'PushManager' in window
 }
 
+

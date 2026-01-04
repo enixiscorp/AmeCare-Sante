@@ -2,9 +2,11 @@ import React, { useState, useCallback, useEffect, useRef } from 'react'
 import './App.css'
 import InvoiceForm from './components/InvoiceForm'
 import InvoicePreview from './components/InvoicePreview'
+import Toast from './components/Toast'
 import { generatePDF } from './utils/pdfGenerator'
 import { saveInvoice, loadCurrentInvoice, getAllInvoices, loadInvoice } from './utils/invoiceStorage'
 import { installPWA, isPWAInstalled, canInstallPWA } from './utils/pwaInstall'
+import { optimizeLogo } from './utils/imageResizer'
 
 const initialInvoiceData = {
   // Header
@@ -99,6 +101,7 @@ function App() {
   const [deferredPrompt, setDeferredPrompt] = useState(null)
   const [savedInvoices, setSavedInvoices] = useState([])
   const [showInvoiceList, setShowInvoiceList] = useState(false)
+  const [toast, setToast] = useState(null)
   const autoSaveInterval = useRef(null)
 
   // Initialiser PWA et service worker
@@ -273,6 +276,12 @@ function App() {
     const totals = calculateTotals()
     generatePDF(invoiceData, totals)
     
+    // Afficher la notification de succès
+    setToast({
+      message: 'Facture générée et téléchargée avec succès !',
+      type: 'success'
+    })
+    
     // Après téléchargement, générer un nouveau numéro pour la prochaine facture
     const newInvoiceNumber = generateInvoiceNumber()
     localStorage.setItem('currentInvoiceNumber', newInvoiceNumber)
@@ -282,15 +291,41 @@ function App() {
     }))
   }
 
-  const handleLogoUpload = (event) => {
+  const handleLogoUpload = async (event) => {
     const file = event.target.files[0]
     if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        updateInvoiceData('logo', reader.result)
+      try {
+        // Vérifier que c'est une image
+        if (!file.type.startsWith('image/')) {
+          setToast({
+            message: 'Veuillez sélectionner un fichier image',
+            type: 'error'
+          })
+          return
+        }
+
+        // Optimiser et redimensionner l'image
+        const optimizedImage = await optimizeLogo(file)
+        updateInvoiceData('logo', optimizedImage)
+        
+        setToast({
+          message: 'Logo optimisé et ajouté avec succès !',
+          type: 'success'
+        })
+      } catch (error) {
+        console.error('Erreur lors de l\'optimisation du logo:', error)
+        setToast({
+          message: 'Erreur lors de l\'ajout du logo. Veuillez réessayer.',
+          type: 'error'
+        })
       }
-      reader.readAsDataURL(file)
     }
+  }
+
+  const handlePreviewClick = () => {
+    setActiveTab('preview')
+    // Scroll en haut de la page
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const totals = calculateTotals()
@@ -376,6 +411,7 @@ function App() {
             removeService={removeService}
             handleLogoUpload={handleLogoUpload}
             totals={totals}
+            onPreviewClick={handlePreviewClick}
           />
         ) : (
           <InvoicePreview
@@ -386,6 +422,16 @@ function App() {
           />
         )}
       </main>
+
+      {/* Notification Toast */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+          duration={4000}
+        />
+      )}
     </div>
   )
 }
