@@ -461,7 +461,7 @@ const InvoiceForm = ({
           className="btn-preview-large"
           onClick={onPreviewClick}
         >
-          👁️ Voir l'aperçu de la facture
+          📄 Génération de la Facture
         </button>
       </div>
     </div>

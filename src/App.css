@@ -54,7 +54,10 @@
 }
 
 .save-btn,
-.list-btn {
+.list-btn,
+.history-btn,
+.admin-btn,
+.admin-btn-inactive {
   background: rgba(255, 255, 255, 0.2);
   color: white;
   border: 2px solid white;
@@ -71,9 +74,26 @@
 }
 
 .save-btn:hover,
-.list-btn:hover {
+.list-btn:hover,
+.history-btn:hover,
+.admin-btn:hover,
+.admin-btn-inactive:hover {
   background: white;
   color: var(--primary-color);
+}
+
+.admin-btn {
+  background: rgba(255, 215, 0, 0.3);
+  border-color: gold;
+}
+
+.admin-btn:hover {
+  background: gold;
+  color: var(--text-primary);
+}
+
+.admin-btn-inactive {
+  opacity: 0.7;
 }
 
 .invoice-list-overlay {
@@ -201,6 +221,53 @@
 
 .load-invoice-btn:hover {
   background: var(--primary-hover);
+}
+
+.history-modal {
+  max-width: 700px;
+}
+
+.history-info {
+  padding: 0.75rem 1rem;
+  background: var(--bg-color);
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  border-left: 3px solid var(--primary-color);
+}
+
+.history-item {
+  border-left: 3px solid transparent;
+}
+
+.history-item:hover {
+  border-left-color: var(--primary-color);
+}
+
+.history-item .user-id {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+  font-family: monospace;
+}
+
+@media (max-width: 768px) {
+  .header-actions {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .save-btn,
+  .list-btn,
+  .history-btn,
+  .admin-btn,
+  .admin-btn-inactive {
+    min-width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
 }
 
 .app-tabs {

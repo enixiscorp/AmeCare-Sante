@@ -4,7 +4,7 @@ import InvoiceForm from './components/InvoiceForm'
 import InvoicePreview from './components/InvoicePreview'
 import Toast from './components/Toast'
 import { generatePDF } from './utils/pdfGenerator'
-import { saveInvoice, loadCurrentInvoice, getAllInvoices, loadInvoice } from './utils/invoiceStorage'
+import { saveInvoice, loadCurrentInvoice, getAllInvoices, loadInvoice, saveToHistory, getInvoiceHistory, isAdminMode, setAdminMode } from './utils/invoiceStorage'
 import { installPWA, isPWAInstalled, canInstallPWA } from './utils/pwaInstall'
 import { optimizeLogo } from './utils/imageResizer'
 
@@ -100,9 +100,17 @@ function App() {
   const [showInstallPrompt, setShowInstallPrompt] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState(null)
   const [savedInvoices, setSavedInvoices] = useState([])
+  const [invoiceHistory, setInvoiceHistory] = useState([])
   const [showInvoiceList, setShowInvoiceList] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
+  const [adminMode, setAdminModeState] = useState(false)
   const [toast, setToast] = useState(null)
   const autoSaveInterval = useRef(null)
+
+  // Vérifier le mode admin au chargement
+  useEffect(() => {
+    setAdminModeState(isAdminMode())
+  }, [])
 
   // Initialiser PWA et service worker
   useEffect(() => {
@@ -137,10 +145,11 @@ function App() {
     }
   }, [invoiceData])
 
-  // Charger la liste des factures sauvegardées
+  // Charger la liste des factures sauvegardées et l'historique
   useEffect(() => {
     setSavedInvoices(getAllInvoices())
-  }, [])
+    setInvoiceHistory(getInvoiceHistory(isAdminMode()))
+  }, [adminMode])
 
   const handleInstallPWA = async () => {
     if (!deferredPrompt) return
@@ -169,7 +178,49 @@ function App() {
   const handleSaveCurrent = () => {
     if (saveInvoice(invoiceData)) {
       setSavedInvoices(getAllInvoices())
-      alert('Facture sauvegardée avec succès !')
+      setToast({
+        message: 'Facture sauvegardée avec succès !',
+        type: 'success'
+      })
+    }
+  }
+
+  const handleToggleAdminMode = () => {
+    if (adminMode) {
+      if (setAdminMode(false)) {
+        setAdminModeState(false)
+        setInvoiceHistory(getInvoiceHistory(false))
+        setToast({
+          message: 'Mode administrateur désactivé',
+          type: 'info'
+        })
+      }
+    } else {
+      if (setAdminMode(true)) {
+        setAdminModeState(true)
+        setInvoiceHistory(getInvoiceHistory(true))
+        setToast({
+          message: 'Mode administrateur activé - Vue de toutes les factures',
+          type: 'success'
+        })
+      }
+    }
+  }
+
+  const handleLoadFromHistory = (invoiceNumber) => {
+    const history = getInvoiceHistory(isAdminMode())
+    const invoice = history.find(inv => inv.invoiceNumber === invoiceNumber)
+    if (invoice) {
+      setInvoiceData({
+        ...invoice,
+        structureName: 'AmeCare Santé'
+      })
+      setShowHistory(false)
+      setActiveTab('form')
+      setToast({
+        message: 'Facture chargée depuis l\'historique',
+        type: 'success'
+      })
     }
   }
 
@@ -276,6 +327,17 @@ function App() {
     const totals = calculateTotals()
     generatePDF(invoiceData, totals)
     
+    // Sauvegarder dans l'historique persistant avec les totaux calculés
+    const historyData = {
+      ...invoiceData,
+      totals: totals,
+      totalTTC: totals.totalTTC
+    }
+    saveToHistory(historyData)
+    
+    // Rafraîchir l'historique
+    setInvoiceHistory(getInvoiceHistory(isAdminMode()))
+    
     // Afficher la notification de succès
     setToast({
       message: 'Facture générée et téléchargée avec succès !',
@@ -349,6 +411,19 @@ function App() {
           <button className="list-btn" onClick={() => setShowInvoiceList(!showInvoiceList)} title="Mes factures">
             📋
           </button>
+          <button className="history-btn" onClick={() => setShowHistory(!showHistory)} title="Historique">
+            📚
+          </button>
+          {adminMode && (
+            <button className="admin-btn" onClick={handleToggleAdminMode} title="Quitter le mode admin">
+              👑
+            </button>
+          )}
+          {!adminMode && (
+            <button className="admin-btn-inactive" onClick={handleToggleAdminMode} title="Mode administrateur">
+              🔐
+            </button>
+          )}
         </div>
       </header>
 
@@ -380,6 +455,62 @@ function App() {
                     </li>
                   ))}
                 </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showHistory && (
+        <div className="invoice-list-overlay">
+          <div className="invoice-list-modal history-modal">
+            <div className="modal-header">
+              <h2>
+                {adminMode ? '📚 Historique complet (Admin)' : '📚 Mon historique de factures'}
+              </h2>
+              <button className="close-btn" onClick={() => setShowHistory(false)}>✕</button>
+            </div>
+            <div className="invoice-list-content">
+              {invoiceHistory.length === 0 ? (
+                <p className="empty-message">
+                  {adminMode ? 'Aucune facture dans l\'historique' : 'Aucune facture générée pour le moment'}
+                </p>
+              ) : (
+                <>
+                  {adminMode && (
+                    <p className="history-info">
+                      Mode administrateur : {invoiceHistory.length} facture(s) au total
+                    </p>
+                  )}
+                  <ul className="invoice-list">
+                    {invoiceHistory.map((invoice, index) => (
+                      <li key={index} className="invoice-item history-item">
+                        <div className="invoice-item-info">
+                          <strong>{invoice.invoiceNumber || 'Sans numéro'}</strong>
+                          <span>{invoice.clientName || 'Client non renseigné'}</span>
+                          <small>
+                            {invoice.generatedAt ? new Date(invoice.generatedAt).toLocaleDateString('fr-FR', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            }) : ''}
+                          </small>
+                          {adminMode && invoice.userId && (
+                            <small className="user-id">Utilisateur: {invoice.userId.substring(0, 8)}...</small>
+                          )}
+                        </div>
+                        <button 
+                          className="load-invoice-btn"
+                          onClick={() => handleLoadFromHistory(invoice.invoiceNumber)}
+                        >
+                          Voir
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </>
               )}
             </div>
           </div>
