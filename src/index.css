@@ -39,9 +39,31 @@ code {
 button {
   cursor: pointer;
   font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 input, textarea, select {
   font-family: inherit;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* Amélioration du tactile sur mobile */
+@media (max-width: 768px) {
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  input, textarea, select {
+    font-size: 16px; /* Empêche le zoom automatique sur iOS */
+  }
+}
+
+/* Amélioration du scroll sur mobile */
+* {
+  -webkit-overflow-scrolling: touch;
 }
 

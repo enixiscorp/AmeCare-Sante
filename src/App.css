@@ -6,20 +6,201 @@
 .app-header {
   background: linear-gradient(135deg, var(--primary-color) 0%, #1e40af 100%);
   color: white;
-  padding: 2rem 1rem;
-  text-align: center;
+  padding: 1rem;
   box-shadow: var(--shadow-md);
+  position: relative;
+}
+
+.header-content {
+  text-align: center;
+  margin-bottom: 0.5rem;
 }
 
 .app-header h1 {
-  font-size: 2rem;
+  font-size: 1.5rem;
   margin-bottom: 0.5rem;
   font-weight: 700;
 }
 
 .app-header p {
-  font-size: 1rem;
+  font-size: 0.9rem;
   opacity: 0.9;
+}
+
+.header-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.install-pwa-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid white;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin: 0.5rem auto;
+  display: block;
+}
+
+.install-pwa-btn:hover {
+  background: white;
+  color: var(--primary-color);
+}
+
+.save-btn,
+.list-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid white;
+  padding: 0.5rem;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.save-btn:hover,
+.list-btn:hover {
+  background: white;
+  color: var(--primary-color);
+}
+
+.invoice-list-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.invoice-list-modal {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.close-btn:hover {
+  background: var(--bg-color);
+}
+
+.invoice-list-content {
+  padding: 1rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.empty-message {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 2rem;
+}
+
+.invoice-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.invoice-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.2s;
+}
+
+.invoice-item:hover {
+  background: var(--bg-color);
+}
+
+.invoice-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.invoice-item-info strong {
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.invoice-item-info span {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.invoice-item-info small {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.load-invoice-btn {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.load-invoice-btn:hover {
+  background: var(--primary-hover);
 }
 
 .app-tabs {
@@ -60,21 +241,81 @@
 }
 
 @media (max-width: 768px) {
+  .app-header {
+    padding: 1rem 0.75rem;
+  }
+
   .app-header h1 {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
   }
 
   .app-header p {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+  }
+
+  .header-actions {
+    margin-top: 0.75rem;
+  }
+
+  .install-pwa-btn {
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+    width: 100%;
+    max-width: 200px;
   }
 
   .app-tabs {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    padding: 1rem 0.5rem;
+    gap: 0.5rem;
   }
 
   .tab-button {
+    flex: 1;
+    padding: 0.75rem 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .app-main {
+    padding: 1rem 0.5rem;
+  }
+
+  .invoice-list-modal {
+    max-height: 90vh;
+    margin: 0.5rem;
+  }
+
+  .modal-header {
+    padding: 1rem;
+  }
+
+  .modal-header h2 {
+    font-size: 1.25rem;
+  }
+
+  .invoice-list-content {
+    padding: 0.5rem;
+  }
+
+  .invoice-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .load-invoice-btn {
     width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-header h1 {
+    font-size: 1.1rem;
+  }
+
+  .tab-button {
+    font-size: 0.85rem;
+    padding: 0.625rem 0.5rem;
   }
 }
 

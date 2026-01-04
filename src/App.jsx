@@ -1,8 +1,10 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 import './App.css'
 import InvoiceForm from './components/InvoiceForm'
 import InvoicePreview from './components/InvoicePreview'
 import { generatePDF } from './utils/pdfGenerator'
+import { saveInvoice, loadCurrentInvoice, getAllInvoices, loadInvoice } from './utils/invoiceStorage'
+import { installPWA, isPWAInstalled, canInstallPWA } from './utils/pwaInstall'
 
 const initialInvoiceData = {
   // Header
@@ -76,11 +78,86 @@ const getInitialInvoiceNumber = () => {
 }
 
 function App() {
-  const [invoiceData, setInvoiceData] = useState({
-    ...initialInvoiceData,
-    invoiceNumber: getInitialInvoiceNumber()
+  const [invoiceData, setInvoiceData] = useState(() => {
+    // Charger la facture sauvegardée ou créer une nouvelle
+    const saved = loadCurrentInvoice()
+    return saved ? { ...saved, invoiceNumber: saved.invoiceNumber || getInitialInvoiceNumber() } : {
+      ...initialInvoiceData,
+      invoiceNumber: getInitialInvoiceNumber()
+    }
   })
   const [activeTab, setActiveTab] = useState('form')
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false)
+  const [deferredPrompt, setDeferredPrompt] = useState(null)
+  const [savedInvoices, setSavedInvoices] = useState([])
+  const [showInvoiceList, setShowInvoiceList] = useState(false)
+  const autoSaveInterval = useRef(null)
+
+  // Initialiser PWA et service worker
+  useEffect(() => {
+    if (canInstallPWA() && !isPWAInstalled()) {
+      installPWA().catch(err => console.log('PWA non disponible:', err))
+      
+      // Détecter l'événement beforeinstallprompt
+      const handleBeforeInstallPrompt = (e) => {
+        e.preventDefault()
+        setDeferredPrompt(e)
+        setShowInstallPrompt(true)
+      }
+      
+      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+      
+      return () => {
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+      }
+    }
+  }, [])
+
+  // Sauvegarde automatique toutes les 30 secondes
+  useEffect(() => {
+    autoSaveInterval.current = setInterval(() => {
+      saveInvoice(invoiceData)
+    }, 30000)
+
+    return () => {
+      if (autoSaveInterval.current) {
+        clearInterval(autoSaveInterval.current)
+      }
+    }
+  }, [invoiceData])
+
+  // Charger la liste des factures sauvegardées
+  useEffect(() => {
+    setSavedInvoices(getAllInvoices())
+  }, [])
+
+  const handleInstallPWA = async () => {
+    if (!deferredPrompt) return
+
+    deferredPrompt.prompt()
+    const { outcome } = await deferredPrompt.userChoice
+    
+    if (outcome === 'accepted') {
+      setShowInstallPrompt(false)
+      setDeferredPrompt(null)
+    }
+  }
+
+  const handleLoadInvoice = (invoiceNumber) => {
+    const invoice = loadInvoice(invoiceNumber)
+    if (invoice) {
+      setInvoiceData(invoice)
+      setShowInvoiceList(false)
+      setActiveTab('form')
+    }
+  }
+
+  const handleSaveCurrent = () => {
+    if (saveInvoice(invoiceData)) {
+      setSavedInvoices(getAllInvoices())
+      alert('Facture sauvegardée avec succès !')
+    }
+  }
 
   const updateInvoiceData = useCallback((field, value) => {
     setInvoiceData(prev => {
@@ -107,6 +184,9 @@ function App() {
         const rate = field === 'kilometers.rate' ? value : newData.kilometers.rate
         newData.kilometers.amount = (km || 0) * (rate || 0)
       }
+      
+      // Sauvegarder automatiquement
+      saveInvoice(newData)
       
       return newData
     })
@@ -200,9 +280,58 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>🏥 AmeCare - Générateur de Facture</h1>
-        <p>Créez vos factures professionnelles en quelques minutes</p>
+        <div className="header-content">
+          <h1>🏥 AmeCare - Générateur de Facture</h1>
+          <p>Créez vos factures professionnelles en quelques minutes</p>
+        </div>
+        {showInstallPrompt && !isPWAInstalled() && (
+          <button className="install-pwa-btn" onClick={handleInstallPWA}>
+            📲 Installer l'app
+          </button>
+        )}
+        <div className="header-actions">
+          <button className="save-btn" onClick={handleSaveCurrent} title="Sauvegarder">
+            💾
+          </button>
+          <button className="list-btn" onClick={() => setShowInvoiceList(!showInvoiceList)} title="Mes factures">
+            📋
+          </button>
+        </div>
       </header>
+
+      {showInvoiceList && (
+        <div className="invoice-list-overlay">
+          <div className="invoice-list-modal">
+            <div className="modal-header">
+              <h2>Mes factures sauvegardées</h2>
+              <button className="close-btn" onClick={() => setShowInvoiceList(false)}>✕</button>
+            </div>
+            <div className="invoice-list-content">
+              {savedInvoices.length === 0 ? (
+                <p className="empty-message">Aucune facture sauvegardée</p>
+              ) : (
+                <ul className="invoice-list">
+                  {savedInvoices.map((invoice, index) => (
+                    <li key={index} className="invoice-item">
+                      <div className="invoice-item-info">
+                        <strong>{invoice.invoiceNumber || 'Sans numéro'}</strong>
+                        <span>{invoice.clientName || 'Client non renseigné'}</span>
+                        <small>{invoice.invoiceDate ? new Date(invoice.invoiceDate).toLocaleDateString('fr-FR') : ''}</small>
+                      </div>
+                      <button 
+                        className="load-invoice-btn"
+                        onClick={() => handleLoadInvoice(invoice.invoiceNumber)}
+                      >
+                        Charger
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="app-tabs">
         <button

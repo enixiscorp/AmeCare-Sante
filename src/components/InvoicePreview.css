@@ -290,12 +290,15 @@
 
 @media (max-width: 768px) {
   .invoice-preview {
-    padding: 1.5rem;
+    padding: 1rem;
+    margin: 0;
+    border-radius: 0;
   }
 
   .invoice-header {
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1rem;
+    padding-bottom: 1rem;
   }
 
   .header-right {
@@ -304,15 +307,29 @@
 
   .header-left {
     flex-direction: column;
+    gap: 1rem;
+  }
+
+  .invoice-logo {
+    max-width: 120px;
+    max-height: 60px;
+  }
+
+  .structure-name {
+    font-size: 1.4rem;
+  }
+
+  .invoice-title {
+    font-size: 1.5rem;
   }
 
   .preview-table {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
   }
 
   .preview-table th,
   .preview-table td {
-    padding: 0.5rem;
+    padding: 0.5rem 0.25rem;
   }
 
   .totals-table {
@@ -322,11 +339,47 @@
 
   .preview-actions {
     flex-direction: column;
+    gap: 0.75rem;
   }
 
   .btn-download,
   .btn-reset {
     width: 100%;
+    padding: 0.875rem 1.5rem;
+    font-size: 0.95rem;
+  }
+
+  .invoice-client,
+  .invoice-kilometers {
+    padding: 0.75rem 1rem;
+  }
+
+  .invoice-footer {
+    padding-top: 1.5rem;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .invoice-preview {
+    padding: 0.75rem;
+  }
+
+  .structure-name {
+    font-size: 1.2rem;
+  }
+
+  .invoice-title {
+    font-size: 1.3rem;
+  }
+
+  .preview-table {
+    font-size: 0.7rem;
+  }
+
+  .preview-table th,
+  .preview-table td {
+    padding: 0.4rem 0.2rem;
   }
 }
 

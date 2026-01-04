@@ -22,12 +22,21 @@ Application web front-end pour générer des factures professionnelles pour les 
 npm install
 ```
 
-2. Lancer l'application en mode développement :
+2. **Créer les icônes PWA** (voir `ICONS_README.md`) :
+   - Créez `icon-192.png` et `icon-512.png` dans le dossier `public/`
+   - Ou utilisez le générateur : ouvrez `public/icon-generator.html` dans votre navigateur
+
+3. Lancer l'application en mode développement :
 ```bash
 npm run dev
 ```
 
-3. Ouvrir votre navigateur à l'adresse affichée (généralement http://localhost:5173)
+4. Ouvrir votre navigateur à l'adresse affichée (généralement http://localhost:5173)
+
+5. **Pour tester la PWA** :
+   - Ouvrez les outils de développement (F12)
+   - Allez dans l'onglet "Application" → "Service Workers"
+   - Vérifiez que le service worker est actif
 
 ## 📦 Build pour production
 
@@ -105,12 +114,41 @@ Tableau avec :
 - **jsPDF-autotable** - Tables dans les PDF
 - **CSS3** - Styling responsive
 
+## 📱 Application Progressive Web App (PWA)
+
+L'application est maintenant une **PWA installable** sur smartphone et tablette !
+
+### Installation sur mobile
+
+1. Ouvrez l'application dans votre navigateur mobile
+2. Un bouton "Installer l'app" apparaîtra automatiquement
+3. Ou utilisez le menu de votre navigateur :
+   - **Android (Chrome)** : Menu → "Ajouter à l'écran d'accueil"
+   - **iOS (Safari)** : Partager → "Sur l'écran d'accueil"
+
+### Fonctionnalités PWA
+
+- ✅ Installation sur smartphone/tablette
+- ✅ Fonctionne hors ligne (après première visite)
+- ✅ Sauvegarde automatique des factures
+- ✅ Édition des factures sauvegardées
+- ✅ Légère et rapide
+- ✅ Interface optimisée pour mobile
+
+### Sauvegarde et édition
+
+- **Sauvegarde automatique** : Les modifications sont sauvegardées toutes les 30 secondes
+- **Bouton de sauvegarde** : Sauvegarde manuelle instantanée
+- **Liste des factures** : Accédez à toutes vos factures sauvegardées
+- **Édition** : Chargez n'importe quelle facture sauvegardée pour la modifier
+
 ## 📱 Compatibilité
 
 - ✅ Chrome/Edge (dernières versions)
 - ✅ Firefox (dernières versions)
 - ✅ Safari (dernières versions)
 - ✅ Mobile (iOS Safari, Chrome Mobile)
+- ✅ PWA installable sur Android et iOS
 
 ## 📝 Notes
 
