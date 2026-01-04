@@ -17,51 +17,7 @@ export const generatePDF = (invoiceData, totals) => {
     return y + lines.length * (fontSize * 0.4)
   }
 
-  // Header
-  let logoHeight = 0
-  if (invoiceData.logo) {
-    try {
-      // Try to extract image dimensions from base64 or use default
-      const imgWidth = 50
-      const imgHeight = 30
-      doc.addImage(invoiceData.logo, 'PNG', margin, yPosition, imgWidth, imgHeight)
-      logoHeight = imgHeight
-    } catch (e) {
-      console.error('Error loading logo:', e)
-    }
-  }
-
-  // Structure name and details
-  let headerY = invoiceData.logo ? yPosition + logoHeight / 4 : yPosition
-  const headerX = invoiceData.logo ? margin + 60 : margin
-
-  headerY = addText(
-    invoiceData.structureName || 'Nom de la structure',
-    headerX,
-    headerY,
-    contentWidth - 60,
-    16,
-    'bold'
-  )
-
-  if (invoiceData.activity) {
-    headerY = addText(invoiceData.activity, headerX, headerY + 3, contentWidth - 60, 10)
-  }
-
-  if (invoiceData.phone || invoiceData.email || invoiceData.address) {
-    headerY += 3
-    if (invoiceData.phone) {
-      headerY = addText(`Tel: ${invoiceData.phone}`, headerX, headerY, contentWidth - 60, 9)
-    }
-    if (invoiceData.email) {
-      headerY = addText(`Email: ${invoiceData.email}`, headerX, headerY + 3, contentWidth - 60, 9)
-    }
-    if (invoiceData.address) {
-      headerY = addText(`Adresse: ${invoiceData.address}`, headerX, headerY + 3, contentWidth - 60, 9)
-    }
-  }
-
-  // Invoice title and details (right aligned)
+  // Helper function for date formatting
   const formatDate = (dateString) => {
     if (!dateString) return ''
     const date = new Date(dateString)
@@ -72,67 +28,131 @@ export const generatePDF = (invoiceData, totals) => {
     })
   }
 
+  // Header - Logo and Company Info
+  let logoHeight = 0
+  const logoWidth = 45
+  const logoMaxHeight = 35
+  
+  if (invoiceData.logo) {
+    try {
+      doc.addImage(invoiceData.logo, 'PNG', margin, yPosition, logoWidth, logoMaxHeight)
+      logoHeight = logoMaxHeight
+    } catch (e) {
+      console.error('Error loading logo:', e)
+    }
+  }
+
+  // Structure name and details (left side)
+  let headerY = yPosition
+  const headerX = invoiceData.logo ? margin + logoWidth + 8 : margin
+  const headerInfoWidth = contentWidth - (invoiceData.logo ? logoWidth + 8 : 0) - 80 // Reserve space for right side
+
+  headerY = addText(
+    invoiceData.structureName || 'Nom de la structure',
+    headerX,
+    headerY,
+    headerInfoWidth,
+    14,
+    'bold'
+  )
+
+  if (invoiceData.activity) {
+    headerY = addText(invoiceData.activity, headerX, headerY + 2, headerInfoWidth, 9, 'normal')
+  }
+
+  if (invoiceData.phone || invoiceData.email || invoiceData.address) {
+    headerY += 2
+    if (invoiceData.phone) {
+      headerY = addText(`Tel: ${invoiceData.phone}`, headerX, headerY, headerInfoWidth, 8)
+    }
+    if (invoiceData.email) {
+      headerY = addText(`Email: ${invoiceData.email}`, headerX, headerY + 2.5, headerInfoWidth, 8)
+    }
+    if (invoiceData.address) {
+      headerY = addText(`Adresse: ${invoiceData.address}`, headerX, headerY + 2.5, headerInfoWidth, 8)
+    }
+  }
+
+  // Invoice title and details (right aligned)
   let invoiceDetailsY = yPosition
-  doc.setFontSize(20)
+  doc.setFontSize(18)
   doc.setFont(undefined, 'bold')
   doc.setTextColor(37, 99, 235) // Primary color
   doc.text('FACTURE', pageWidth - margin, invoiceDetailsY, { align: 'right' })
   
-  invoiceDetailsY += 10
-  doc.setFontSize(10)
+  invoiceDetailsY += 8
+  doc.setFontSize(9)
   doc.setTextColor(0, 0, 0)
+  doc.setFont(undefined, 'normal')
 
   doc.text(`N° Facture: ${invoiceData.invoiceNumber || 'N/A'}`, pageWidth - margin, invoiceDetailsY, { align: 'right' })
-  invoiceDetailsY += 5
+  invoiceDetailsY += 4
   doc.text(`Date: ${formatDate(invoiceData.invoiceDate)}`, pageWidth - margin, invoiceDetailsY, { align: 'right' })
   if (invoiceData.servicePeriod) {
-    invoiceDetailsY += 5
+    invoiceDetailsY += 4
     doc.text(`Période: ${invoiceData.servicePeriod}`, pageWidth - margin, invoiceDetailsY, { align: 'right' })
   }
 
-  yPosition = Math.max(headerY, invoiceDetailsY) + 15
+  // Draw line under header
+  const headerBottom = Math.max(headerY + 5, invoiceDetailsY + 5, yPosition + logoHeight + 3)
+  doc.setDrawColor(37, 99, 235)
+  doc.setLineWidth(0.8)
+  doc.line(margin, headerBottom, pageWidth - margin, headerBottom)
+  yPosition = headerBottom + 8
 
-  // Client section
+  // Client section - Two columns layout
+  const clientBoxHeight = 28
   doc.setDrawColor(37, 99, 235)
   doc.setFillColor(248, 250, 252)
-  doc.roundedRect(margin, yPosition, contentWidth, 30, 3, 3, 'FD')
+  doc.roundedRect(margin, yPosition, contentWidth, clientBoxHeight, 2, 2, 'FD')
   
-  yPosition += 8
-  doc.setFontSize(11)
-  doc.setFont(undefined, 'bold')
-  doc.text('Facturé à:', margin + 5, yPosition)
-  
-  yPosition += 7
+  yPosition += 6
   doc.setFontSize(10)
+  doc.setFont(undefined, 'bold')
+  doc.text('Facturé à:', margin + 3, yPosition)
+  
+  yPosition += 6
+  doc.setFontSize(9)
   doc.setFont(undefined, 'normal')
-  yPosition = addText(
+  
+  // Left column
+  let clientLeftY = yPosition
+  const clientLeftX = margin + 3
+  const clientColumnWidth = (contentWidth - 10) / 2
+  
+  clientLeftY = addText(
     invoiceData.clientName || 'Nom du client',
-    margin + 5,
-    yPosition,
-    contentWidth - 10,
-    10,
+    clientLeftX,
+    clientLeftY,
+    clientColumnWidth,
+    9,
     'bold'
   )
 
   if (invoiceData.clientRef) {
-    yPosition = addText(`Réf. patient: ${invoiceData.clientRef}`, margin + 5, yPosition + 3, contentWidth - 10, 9)
+    clientLeftY = addText(`Réf. patient: ${invoiceData.clientRef}`, clientLeftX, clientLeftY + 2, clientColumnWidth, 8)
   }
   if (invoiceData.clientAddress) {
-    yPosition = addText(invoiceData.clientAddress, margin + 5, yPosition + 3, contentWidth - 10, 9)
+    clientLeftY = addText(`Adresse: ${invoiceData.clientAddress}`, clientLeftX, clientLeftY + 2, clientColumnWidth, 8)
   }
+
+  // Right column
+  let clientRightY = yPosition
+  const clientRightX = margin + contentWidth / 2 + 2
+  
   if (invoiceData.clientPhone) {
-    yPosition = addText(`Tel: ${invoiceData.clientPhone}`, margin + 5, yPosition + 3, contentWidth - 10, 9)
+    clientRightY = addText(`Téléphone: ${invoiceData.clientPhone}`, clientRightX, clientRightY, clientColumnWidth, 8)
   }
   if (invoiceData.clientEmail) {
-    yPosition = addText(`Email: ${invoiceData.clientEmail}`, margin + 5, yPosition + 3, contentWidth - 10, 9)
+    clientRightY = addText(`Email: ${invoiceData.clientEmail}`, clientRightX, clientRightY + 2, clientColumnWidth, 8)
   }
   if (invoiceData.clientInsurance) {
-    yPosition = addText(`Assurance: ${invoiceData.clientInsurance}`, margin + 5, yPosition + 3, contentWidth - 10, 9)
+    clientRightY = addText(`Assurance: ${invoiceData.clientInsurance}`, clientRightX, clientRightY + 2, clientColumnWidth, 8)
   }
 
-  yPosition += 20
+  yPosition += Math.max(clientLeftY - yPosition, clientRightY - yPosition) + 8
 
-  // Services table
+  // Services table - Optimized for A4
   const servicesData = invoiceData.services
     .filter(service => service.designation || service.ref || service.hours > 0 || service.unitPrice > 0)
     .map(service => [
@@ -153,44 +173,49 @@ export const generatePDF = (invoiceData, totals) => {
       fillColor: [37, 99, 235],
       textColor: [255, 255, 255],
       fontStyle: 'bold',
-      fontSize: 9
+      fontSize: 8
     },
     bodyStyles: {
-      fontSize: 9
+      fontSize: 8
     },
     columnStyles: {
-      2: { halign: 'center' },
-      4: { halign: 'right' },
-      5: { halign: 'right' }
+      0: { cellWidth: 25 },
+      1: { cellWidth: 'auto' },
+      2: { halign: 'center', cellWidth: 30 },
+      3: { cellWidth: 35 },
+      4: { halign: 'right', cellWidth: 35 },
+      5: { halign: 'right', cellWidth: 35 }
     },
-    margin: { left: margin, right: margin }
+    margin: { left: margin, right: margin },
+    tableWidth: 'wrap'
   })
 
-  yPosition = doc.lastAutoTable.finalY + 10
+  yPosition = doc.lastAutoTable.finalY + 8
 
   // Kilometers section
   if (invoiceData.kilometers.distance > 0 || invoiceData.kilometers.rate > 0) {
     doc.setFillColor(248, 250, 252)
-    doc.roundedRect(margin, yPosition, contentWidth, 20, 3, 3, 'FD')
+    doc.roundedRect(margin, yPosition, contentWidth, 18, 2, 2, 'FD')
     
-    yPosition += 7
-    doc.setFontSize(10)
+    yPosition += 6
+    doc.setFontSize(9)
     doc.setFont(undefined, 'bold')
-    doc.text('Frais kilométriques', margin + 5, yPosition)
+    doc.text('Frais kilométriques', margin + 3, yPosition)
     
-    yPosition += 7
+    yPosition += 6
     doc.setFont(undefined, 'normal')
+    doc.setFontSize(8)
     const kmText = `${invoiceData.kilometers.distance} km × ${invoiceData.kilometers.rate.toFixed(2)} ${invoiceData.currency}/km`
-    doc.text(kmText, margin + 5, yPosition)
+    doc.text(kmText, margin + 3, yPosition)
     
     doc.text(
       `${invoiceData.kilometers.amount.toFixed(2)} ${invoiceData.currency}`,
-      pageWidth - margin - 5,
+      pageWidth - margin - 3,
       yPosition,
       { align: 'right' }
     )
     
-    yPosition += 15
+    yPosition += 12
   }
 
   // Totals section
@@ -264,48 +289,78 @@ export const generatePDF = (invoiceData, totals) => {
   )
 
   doc.setTextColor(0, 0, 0)
-  yPosition += 20
+  yPosition += 15
 
-  // Footer
-  const footerY = 260
+  // Footer - Optimized layout
+  const footerStartY = Math.min(260, yPosition + 5)
+  const footerMaxY = 285 // Maximum position before bottom margin
+  
+  // Draw separator line
   doc.setDrawColor(200, 200, 200)
-  doc.line(margin, footerY, pageWidth - margin, footerY)
+  doc.setLineWidth(0.3)
+  doc.line(margin, footerStartY, pageWidth - margin, footerStartY)
 
-  yPosition = footerY + 10
+  let footerY = footerStartY + 6
+  const footerFontSize = 8
+  const footerColumnWidth = contentWidth / 2 - 3
 
+  // Left column - Payment information
+  let footerLeftY = footerY
   if (invoiceData.paymentTerms) {
-    doc.setFontSize(9)
+    doc.setFontSize(footerFontSize)
     doc.setFont(undefined, 'bold')
-    doc.text('Conditions de paiement:', margin, yPosition)
-    yPosition += 5
+    doc.text('Conditions:', margin, footerLeftY)
+    footerLeftY += 4
     doc.setFont(undefined, 'normal')
-    yPosition = addText(invoiceData.paymentTerms, margin, yPosition, contentWidth, 9)
-    yPosition += 5
+    footerLeftY = addText(invoiceData.paymentTerms, margin, footerLeftY, footerColumnWidth, footerFontSize)
+    footerLeftY += 3
   }
 
   if (invoiceData.paymentDeadline) {
     doc.setFont(undefined, 'bold')
-    doc.text('Délai de paiement:', margin, yPosition)
-    yPosition += 5
+    doc.text('Délai:', margin, footerLeftY)
+    footerLeftY += 4
     doc.setFont(undefined, 'normal')
-    doc.text(invoiceData.paymentDeadline, margin, yPosition)
-    yPosition += 8
+    doc.text(invoiceData.paymentDeadline, margin, footerLeftY)
+    footerLeftY += 6
   }
 
+  // Right column - Payment methods and legal
+  let footerRightY = footerY
   if (invoiceData.paymentMethods) {
+    doc.setFontSize(footerFontSize)
     doc.setFont(undefined, 'bold')
-    doc.text('Moyens de paiement acceptés:', margin, yPosition)
-    yPosition += 5
+    doc.text('Moyens de paiement:', margin + contentWidth / 2 + 3, footerRightY)
+    footerRightY += 4
     doc.setFont(undefined, 'normal')
-    doc.text(invoiceData.paymentMethods, margin, yPosition)
-    yPosition += 8
+    footerRightY = addText(invoiceData.paymentMethods, margin + contentWidth / 2 + 3, footerRightY, footerColumnWidth, footerFontSize)
+    footerRightY += 3
   }
 
   if (invoiceData.legalMention) {
     doc.setFont(undefined, 'italic')
     doc.setTextColor(100, 100, 100)
-    doc.setFontSize(8)
-    yPosition = addText(invoiceData.legalMention, margin, yPosition, contentWidth, 8)
+    footerRightY = addText(invoiceData.legalMention, margin + contentWidth / 2 + 3, footerRightY, footerColumnWidth, footerFontSize - 0.5)
+  }
+
+  // Company slogan - centered
+  const sloganY = Math.max(footerLeftY, footerRightY) + 5
+  if (sloganY < footerMaxY) {
+    doc.setDrawColor(200, 200, 200)
+    doc.setLineWidth(0.2)
+    doc.line(margin, sloganY - 2, pageWidth - margin, sloganY - 2)
+    
+    doc.setFontSize(9)
+    doc.setFont(undefined, 'italic')
+    doc.setTextColor(37, 99, 235) // Primary color
+    const sloganText = 'La Qualité de votre Santé, notre Priorité'
+    doc.text(sloganText, pageWidth / 2, sloganY + 3, { align: 'center' })
+  }
+
+  // Ensure content fits on one page - if not, adjust
+  const pageHeight = doc.internal.pageSize.height
+  if (yPosition > pageHeight - 40) {
+    console.warn('Le contenu dépasse la page A4, certaines parties peuvent être tronquées')
   }
 
   // Save PDF

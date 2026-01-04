@@ -55,13 +55,17 @@ const InvoicePreview = ({ invoiceData, totals, onDownloadPDF, onReset }) => {
         {/* Client Section */}
         <div className="invoice-client">
           <h3>Facturé à:</h3>
-          <div className="client-details">
-            <p><strong>{invoiceData.clientName || 'Nom du client'}</strong></p>
-            {invoiceData.clientRef && <p>Réf. patient: {invoiceData.clientRef}</p>}
-            {invoiceData.clientAddress && <p>{invoiceData.clientAddress}</p>}
-            {invoiceData.clientPhone && <p>Tel: {invoiceData.clientPhone}</p>}
-            {invoiceData.clientEmail && <p>Email: {invoiceData.clientEmail}</p>}
-            {invoiceData.clientInsurance && <p>Assurance: {invoiceData.clientInsurance}</p>}
+          <div className="client-details-grid">
+            <div className="client-column-left">
+              <p><strong>{invoiceData.clientName || 'Nom du client'}</strong></p>
+              {invoiceData.clientRef && <p><strong>Réf. patient:</strong> {invoiceData.clientRef}</p>}
+              {invoiceData.clientAddress && <p><strong>Adresse:</strong> {invoiceData.clientAddress}</p>}
+            </div>
+            <div className="client-column-right">
+              {invoiceData.clientPhone && <p><strong>Téléphone:</strong> {invoiceData.clientPhone}</p>}
+              {invoiceData.clientEmail && <p><strong>Email:</strong> {invoiceData.clientEmail}</p>}
+              {invoiceData.clientInsurance && <p><strong>Assurance:</strong> {invoiceData.clientInsurance}</p>}
+            </div>
           </div>
         </div>
 
@@ -167,6 +171,9 @@ const InvoicePreview = ({ invoiceData, totals, onDownloadPDF, onReset }) => {
               <p className="legal-mention">{invoiceData.legalMention}</p>
             </div>
           )}
+          <div className="footer-section slogan">
+            <p className="company-slogan">La Qualité de votre Santé, notre Priorité</p>
+          </div>
         </div>
       </div>
     </div>
