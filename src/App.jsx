@@ -7,6 +7,7 @@ import { generatePDF } from './utils/pdfGenerator'
 import { saveInvoice, loadCurrentInvoice, getAllInvoices, loadInvoice, saveToHistory, getInvoiceHistory, isAdminMode, setAdminMode } from './utils/invoiceStorage'
 import { installPWA, isPWAInstalled, canInstallPWA } from './utils/pwaInstall'
 import { optimizeLogo } from './utils/imageResizer'
+import { saveInvoiceToSupabase } from './utils/supabaseClient'
 
 const initialInvoiceData = {
   // Header
@@ -107,9 +108,57 @@ function App() {
   const [toast, setToast] = useState(null)
   const autoSaveInterval = useRef(null)
 
-  // Vérifier le mode admin au chargement
+  // Vérifier le mode admin au chargement et gestion de l'accès secret
   useEffect(() => {
     setAdminModeState(isAdminMode())
+    
+    // Accès secret au mode admin : Ctrl+Shift+A (à maintenir pendant 3 secondes)
+    let secretKeyTimer = null
+    let secretKeyCombo = []
+    
+    const handleSecretKeyPress = (e) => {
+      // Détecter Ctrl+Shift+A maintenu
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') {
+        secretKeyCombo.push(Date.now())
+        
+        // Vérifier si on a maintenu la combinaison pendant au moins 2 secondes
+        if (secretKeyCombo.length >= 10) {
+          const timeDiff = secretKeyCombo[secretKeyCombo.length - 1] - secretKeyCombo[0]
+          if (timeDiff >= 2000 && !isAdminMode()) {
+            // Activer le mode admin directement
+            const password = prompt('Mode administrateur : Entrez le mot de passe')
+            if (password === 'admin123' || password === 'AmeCare2024!' || password === 'AmeCareAdmin2024') {
+              setAdminModeState(true)
+              localStorage.setItem('amecare_admin_mode', 'true')
+              setInvoiceHistory(getInvoiceHistory(true))
+              setToast({
+                message: 'Mode administrateur activé',
+                type: 'success'
+              })
+            }
+            secretKeyCombo = []
+          }
+        }
+      } else {
+        secretKeyCombo = []
+      }
+    }
+    
+    const handleSecretKeyUp = () => {
+      secretKeyCombo = []
+    }
+    
+    // Écouter les touches secrètes uniquement si pas déjà en mode admin
+    if (!isAdminMode()) {
+      window.addEventListener('keydown', handleSecretKeyPress)
+      window.addEventListener('keyup', handleSecretKeyUp)
+    }
+    
+    return () => {
+      window.removeEventListener('keydown', handleSecretKeyPress)
+      window.removeEventListener('keyup', handleSecretKeyUp)
+      if (secretKeyTimer) clearTimeout(secretKeyTimer)
+    }
   }, [])
 
   // Initialiser PWA et service worker
@@ -186,24 +235,15 @@ function App() {
   }
 
   const handleToggleAdminMode = () => {
-    if (adminMode) {
-      if (setAdminMode(false)) {
-        setAdminModeState(false)
-        setInvoiceHistory(getInvoiceHistory(false))
-        setToast({
-          message: 'Mode administrateur désactivé',
-          type: 'info'
-        })
-      }
-    } else {
-      if (setAdminMode(true)) {
-        setAdminModeState(true)
-        setInvoiceHistory(getInvoiceHistory(true))
-        setToast({
-          message: 'Mode administrateur activé - Vue de toutes les factures',
-          type: 'success'
-        })
-      }
+    // Désactiver le mode admin uniquement (activation via accès secret)
+    if (setAdminMode(false)) {
+      setAdminModeState(false)
+      setInvoiceHistory(getInvoiceHistory(false))
+      setShowHistory(false)
+      setToast({
+        message: 'Mode administrateur désactivé',
+        type: 'info'
+      })
     }
   }
 
@@ -323,17 +363,25 @@ function App() {
   }
 
   // Générer un nouveau numéro de facture quand l'utilisateur télécharge le PDF
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     const totals = calculateTotals()
     generatePDF(invoiceData, totals)
     
-    // Sauvegarder dans l'historique persistant avec les totaux calculés
+    // Sauvegarder dans l'historique local persistant
     const historyData = {
       ...invoiceData,
       totals: totals,
       totalTTC: totals.totalTTC
     }
     saveToHistory(historyData)
+    
+    // Sauvegarder dans Supabase (backend)
+    try {
+      await saveInvoiceToSupabase(invoiceData, totals)
+    } catch (error) {
+      console.error('Erreur sauvegarde Supabase:', error)
+      // Ne pas bloquer l'utilisateur si Supabase échoue
+    }
     
     // Rafraîchir l'historique
     setInvoiceHistory(getInvoiceHistory(isAdminMode()))
@@ -414,15 +462,16 @@ function App() {
           <button className="history-btn" onClick={() => setShowHistory(!showHistory)} title="Historique">
             📚
           </button>
+          {/* Boutons admin uniquement visibles en mode admin (accès secret uniquement) */}
           {adminMode && (
-            <button className="admin-btn" onClick={handleToggleAdminMode} title="Quitter le mode admin">
-              👑
-            </button>
-          )}
-          {!adminMode && (
-            <button className="admin-btn-inactive" onClick={handleToggleAdminMode} title="Mode administrateur">
-              🔐
-            </button>
+            <>
+              <button className="admin-btn" onClick={() => setShowHistory(!showHistory)} title="Historique Admin - Toutes les factures">
+                👑
+              </button>
+              <button className="admin-exit-btn" onClick={handleToggleAdminMode} title="Quitter le mode admin">
+                🚪
+              </button>
+            </>
           )}
         </div>
       </header>
@@ -466,21 +515,22 @@ function App() {
           <div className="invoice-list-modal history-modal">
             <div className="modal-header">
               <h2>
-                {adminMode ? '📚 Historique complet (Admin)' : '📚 Mon historique de factures'}
+                {adminMode ? '👑 Historique complet - Mode Administrateur' : '📚 Mon historique de factures'}
               </h2>
               <button className="close-btn" onClick={() => setShowHistory(false)}>✕</button>
             </div>
             <div className="invoice-list-content">
               {invoiceHistory.length === 0 ? (
                 <p className="empty-message">
-                  {adminMode ? 'Aucune facture dans l\'historique' : 'Aucune facture générée pour le moment'}
+                  {adminMode ? 'Aucune facture dans l\'historique global' : 'Aucune facture générée pour le moment'}
                 </p>
               ) : (
                 <>
                   {adminMode && (
-                    <p className="history-info">
-                      Mode administrateur : {invoiceHistory.length} facture(s) au total
-                    </p>
+                    <div className="history-info admin-info">
+                      <strong>👑 Mode Administrateur</strong>
+                      <p>{invoiceHistory.length} facture(s) générée(s) au total par tous les utilisateurs</p>
+                    </div>
                   )}
                   <ul className="invoice-list">
                     {invoiceHistory.map((invoice, index) => (

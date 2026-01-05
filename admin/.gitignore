@@ -28,9 +28,3 @@ dist-ssr
 .env.local
 .env.production
 
-# Admin interface
-admin/node_modules
-admin/dist
-admin/.env
-
-
