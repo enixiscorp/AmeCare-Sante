@@ -7,7 +7,7 @@
 3. Cliquez sur "New Project"
 4. Remplissez les informations :
    - **Name**: AmeCare
-   - **Database Password**: Choisissez un mot de passe fort
+   - **Database Password**: Choisissez un mot de passe fort (AmeCare#9Xv!2LqR7@)
    - **Region**: Choisissez la région la plus proche
 5. Attendez que le projet soit créé (2-3 minutes)
 
@@ -27,7 +27,8 @@ Allez dans **SQL Editor** dans votre projet Supabase et exécutez les requêtes 
 
 ```sql
 -- Table principale des factures
-CREATE TABLE invoices (
+-- Utilise IF NOT EXISTS pour éviter les erreurs si la table existe déjà
+CREATE TABLE IF NOT EXISTS invoices (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   invoice_number VARCHAR(50) UNIQUE NOT NULL,
   user_id VARCHAR(255) NOT NULL,
@@ -51,11 +52,11 @@ CREATE TABLE invoices (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Index pour les recherches rapides
-CREATE INDEX idx_invoices_user_id ON invoices(user_id);
-CREATE INDEX idx_invoices_invoice_number ON invoices(invoice_number);
-CREATE INDEX idx_invoices_created_at ON invoices(created_at);
-CREATE INDEX idx_invoices_invoice_date ON invoices(invoice_date);
+-- Index pour les recherches rapides (créés seulement s'ils n'existent pas)
+CREATE INDEX IF NOT EXISTS idx_invoices_user_id ON invoices(user_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_invoice_number ON invoices(invoice_number);
+CREATE INDEX IF NOT EXISTS idx_invoices_created_at ON invoices(created_at);
+CREATE INDEX IF NOT EXISTS idx_invoices_invoice_date ON invoices(invoice_date);
 
 -- Fonction pour mettre à jour updated_at automatiquement
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -74,7 +75,8 @@ FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 ```sql
 -- Table pour suivre les utilisateurs qui génèrent des factures
-CREATE TABLE invoice_users (
+-- Utilise IF NOT EXISTS pour éviter les erreurs si la table existe déjà
+CREATE TABLE IF NOT EXISTS invoice_users (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id VARCHAR(255) UNIQUE NOT NULL,
   first_invoice_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -83,14 +85,16 @@ CREATE TABLE invoice_users (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_invoice_users_user_id ON invoice_users(user_id);
+-- Créer les index seulement s'ils n'existent pas déjà
+CREATE INDEX IF NOT EXISTS idx_invoice_users_user_id ON invoice_users(user_id);
 ```
 
 ### Table des administrateurs
 
 ```sql
 -- Table pour les administrateurs avec 2FA
-CREATE TABLE admin_users (
+-- Utilise IF NOT EXISTS pour éviter les erreurs si la table existe déjà
+CREATE TABLE IF NOT EXISTS admin_users (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
@@ -103,15 +107,18 @@ CREATE TABLE admin_users (
 
 -- Créer le premier admin (mot de passe: admin123 - à changer après)
 -- Le hash doit être généré avec bcrypt (voir le code d'authentification)
+-- Utilise ON CONFLICT pour éviter les erreurs si l'admin existe déjà
 INSERT INTO admin_users (email, password_hash, two_factor_enabled)
-VALUES ('admin@amecare.fr', '$2b$10$YourHashedPasswordHere', false);
+VALUES ('admin@amecare.fr', '$2b$10$YourHashedPasswordHere', false)
+ON CONFLICT (email) DO NOTHING;
 ```
 
 ### Table des statistiques (cache)
 
 ```sql
 -- Table pour stocker les statistiques calculées
-CREATE TABLE statistics_cache (
+-- Utilise IF NOT EXISTS pour éviter les erreurs si la table existe déjà
+CREATE TABLE IF NOT EXISTS statistics_cache (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   stat_type VARCHAR(50) NOT NULL,
   stat_period VARCHAR(50) NOT NULL, -- 'monthly', 'yearly', etc.

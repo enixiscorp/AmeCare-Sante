@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, FileText, BarChart3, LogOut } from 'lucide-react'
+import { LayoutDashboard, FileText, BarChart3, Settings, LogOut } from 'lucide-react'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -19,6 +19,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/dashboard', icon: LayoutDashboard, label: 'Tableau de bord' },
     { path: '/invoices', icon: FileText, label: 'Factures' },
     { path: '/statistics', icon: BarChart3, label: 'Statistiques' },
+    { path: '/settings', icon: Settings, label: 'Paramètres' },
   ]
 
   return (

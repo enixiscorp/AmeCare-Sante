@@ -4,6 +4,7 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import InvoicesList from './pages/InvoicesList'
 import Statistics from './pages/Statistics'
+import Settings from './pages/Settings'
 import Layout from './components/Layout'
 
 function App() {
@@ -76,6 +77,18 @@ function App() {
             isAuthenticated ? (
               <Layout>
                 <Statistics />
+              </Layout>
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <Settings />
               </Layout>
             ) : (
               <Navigate to="/login" />

@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
-import { authenticator } from 'otplib'
 import { verifyAdminPassword } from './supabaseFunctions'
+import { verify2FACode as verify2FACodeUtil } from './twoFactorAuth'
 
 export interface LoginCredentials {
   email: string
@@ -26,7 +26,7 @@ export const authenticateAdmin = async (credentials: LoginCredentials) => {
       }
       
       // Vérifier le code 2FA avec Google Authenticator
-      const isValid2FA = verify2FACode(admin.two_factor_secret, credentials.twoFactorCode)
+      const isValid2FA = verify2FACodeUtil(admin.two_factor_secret, credentials.twoFactorCode)
       if (!isValid2FA) {
         throw new Error('Code 2FA invalide')
       }
@@ -60,7 +60,7 @@ export const authenticateAdmin = async (credentials: LoginCredentials) => {
           return { requires2FA: true, adminId: admin.id }
         }
         
-        const isValid2FA = verify2FACode(admin.two_factor_secret, credentials.twoFactorCode)
+        const isValid2FA = verify2FACodeUtil(admin.two_factor_secret, credentials.twoFactorCode)
         if (!isValid2FA) {
           throw new Error('Code 2FA invalide')
         }
@@ -78,22 +78,12 @@ export const authenticateAdmin = async (credentials: LoginCredentials) => {
   }
 }
 
-// Fonction pour vérifier le code 2FA (Google Authenticator)
-export const verify2FACode = (secret: string, code: string): boolean => {
-  try {
-    return authenticator.verify({ token: code, secret })
-  } catch (error) {
-    return false
-  }
-}
-
-// Fonction pour générer un secret 2FA
-export const generate2FASecret = (): string => {
-  return authenticator.generateSecret()
-}
-
-// Fonction pour obtenir l'URL QR Code pour Google Authenticator
-export const get2FAQRCodeURL = (email: string, secret: string): string => {
-  const serviceName = 'AmeCare Admin'
-  return authenticator.keyuri(email, serviceName, secret)
-}
+// Les fonctions 2FA sont maintenant dans twoFactorAuth.ts
+// Réexport pour compatibilité
+export { 
+  verify2FACode, 
+  generateTOTPSecret, 
+  setup2FA, 
+  enable2FA, 
+  disable2FA 
+} from './twoFactorAuth'
