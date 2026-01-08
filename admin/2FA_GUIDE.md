@@ -202,3 +202,9 @@ Les fonctions principales sont dans :
 
 **Système de sécurité robuste utilisant des standards reconnus (TOTP) et des bibliothèques éprouvées pour protéger les comptes administrateurs.**
 
+
+
+
+
+
+

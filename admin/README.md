@@ -43,3 +43,9 @@ L'interface admin est accessible à l'adresse : `http://localhost:5173/admin` (o
 - Authentification à double facteur (2FA) avec Google Authenticator
 - Session sécurisée avec Supabase
 
+
+
+
+
+
+

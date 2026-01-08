@@ -92,3 +92,9 @@ node scripts/create-admin.js
 - Le hash bcrypt est généré avec 10 rounds (recommandé)
 - Le script est idempotent : vous pouvez l'exécuter plusieurs fois sans problème
 
+
+
+
+
+
+

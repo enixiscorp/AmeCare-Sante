@@ -109,3 +109,9 @@ const updateUserStats = async (userId) => {
 
 export default supabase
 
+
+
+
+
+
+
