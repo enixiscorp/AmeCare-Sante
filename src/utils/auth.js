@@ -2,130 +2,57 @@ import supabase from './supabaseClient'
 
 /**
  * Authentifie un utilisateur avec email et mot de passe
- * Utilise la table admin_users de Supabase pour l'authentification
+ * Utilise uniquement l'Edge Function Supabase (pas de bcrypt côté client)
  */
 export const authenticateUser = async (email, password) => {
   try {
     // Vérifier si Supabase est configuré
     if (!supabase) {
-      // Fallback : authentification locale simple (pour développement)
-      console.warn('Supabase non configuré - utilisation du mode développement')
-      
-      // Authentification de développement avec des comptes hardcodés
-      const devAccounts = {
-        'contacteccorp@gmail.com': '@dmincare26**',
-        'admin@amecare.fr': 'admin123',
-      }
-      
-      if (devAccounts[email] === password) {
-        return {
-          success: true,
-          userId: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          email: email,
-        }
-      } else {
-        return {
-          success: false,
-          error: 'Email ou mot de passe incorrect',
-        }
-      }
-    }
-
-    // Récupérer l'utilisateur depuis Supabase
-    const { data: user, error } = await supabase
-      .from('admin_users')
-      .select('*')
-      .eq('email', email)
-      .single()
-
-    if (error || !user) {
       return {
         success: false,
-        error: 'Email ou mot de passe incorrect',
+        error: 'Supabase n\'est pas configuré. Veuillez configurer les variables d\'environnement.',
       }
     }
 
-    // Vérifier le mot de passe avec bcrypt
-    // Note: Pour utiliser bcrypt dans le navigateur, nous devons utiliser une version web
-    // ou appeler l'Edge Function Supabase
-    
-    // Option 1: Appeler l'Edge Function Supabase (recommandé)
-    try {
-      const { data: result, error: functionError } = await supabase.functions.invoke('verify-password', {
-        body: { email, password },
-      })
+    // Appeler l'Edge Function Supabase pour vérifier le mot de passe
+    const { data: result, error: functionError } = await supabase.functions.invoke('verify-password', {
+      body: { email, password },
+    })
 
-      if (functionError) {
-        throw functionError
+    if (functionError) {
+      console.error('Erreur Edge Function:', functionError)
+      return {
+        success: false,
+        error: 'Erreur de connexion. Veuillez vérifier que l\'Edge Function verify-password est déployée.',
+        requires2FA: false,
       }
+    }
 
-      if (result && result.success) {
-        return {
-          success: true,
-          userId: user.id,
-          email: user.email,
-          user: result.admin,
-        }
-      } else {
+    if (result && result.success) {
+      // Vérifier si le 2FA est requis
+      if (result.requires2FA && result.admin?.two_factor_enabled) {
         return {
           success: false,
-          error: result?.error || 'Email ou mot de passe incorrect',
-        }
-      }
-    } catch (functionError) {
-      // Si l'Edge Function n'est pas disponible, utiliser un fallback simple
-      // Note: En production, il est STRONGLY recommandé d'utiliser l'Edge Function
-      console.warn('Edge Function non disponible. Pour une sécurité maximale, déployez l\'Edge Function verify-password.', functionError)
-      
-      // Pour le développement : authentification basique (NON SÉCURISÉE)
-      // ATTENTION: Ne pas utiliser en production sans Edge Function
-      // Comparaison simple pour le développement uniquement
-      
-      // Essayer d'utiliser bcryptjs si disponible (peut ne pas fonctionner dans tous les navigateurs)
-      try {
-        const bcryptjs = await import('bcryptjs/dist/bcrypt')
-        const bcrypt = bcryptjs.default || bcryptjs
-        
-        if (bcrypt && typeof bcrypt.compareSync === 'function') {
-          const isValidPassword = bcrypt.compareSync(password, user.password_hash)
-          
-          if (!isValidPassword) {
-            return {
-              success: false,
-              error: 'Email ou mot de passe incorrect',
-            }
-          }
-        } else {
-          // Fallback : accepter n'importe quel mot de passe si bcrypt n'est pas disponible
-          // ⚠️ ATTENTION : Ceci est uniquement pour le développement
-          console.warn('⚠️ bcrypt non disponible - mode développement non sécurisé activé')
-          return {
-            success: false,
-            error: 'Authentification non disponible. Veuillez déployer l\'Edge Function verify-password pour utiliser l\'application.',
-          }
-        }
-      } catch (bcryptError) {
-        console.error('Erreur avec bcrypt:', bcryptError)
-        return {
-          success: false,
-          error: 'Authentification non disponible. Veuillez déployer l\'Edge Function verify-password ou configurer bcrypt correctement.',
+          requires2FA: true,
+          adminId: result.admin.id,
+          admin: result.admin,
+          error: 'Code d\'authentification à deux facteurs requis',
         }
       }
 
-      // Mettre à jour la dernière connexion
-      await supabase
-        .from('admin_users')
-        .update({ last_login: new Date().toISOString() })
-        .eq('id', user.id)
-
-      // Retourner les informations de l'utilisateur (sans le hash)
-      const { password_hash, ...userData } = user
-      
+      // Connexion réussie sans 2FA
       return {
         success: true,
-        userId: user.id,
-        email: user.email,
-        user: userData,
+        userId: result.admin.id,
+        email: result.admin.email,
+        user: result.admin,
+        requires2FA: false,
+      }
+    } else {
+      return {
+        success: false,
+        error: result?.error || 'Email ou mot de passe incorrect',
+        requires2FA: false,
       }
     }
   } catch (error) {
@@ -133,7 +60,131 @@ export const authenticateUser = async (email, password) => {
     return {
       success: false,
       error: error.message || 'Erreur d\'authentification',
+      requires2FA: false,
     }
+  }
+}
+
+/**
+ * Vérifie le code 2FA
+ */
+export const verify2FACode = async (adminId, code) => {
+  try {
+    if (!supabase) {
+      return {
+        success: false,
+        error: 'Supabase n\'est pas configuré',
+      }
+    }
+
+    // Récupérer l'utilisateur avec le secret 2FA
+    const { data: user, error } = await supabase
+      .from('admin_users')
+      .select('*')
+      .eq('id', adminId)
+      .single()
+
+    if (error || !user || !user.two_factor_secret) {
+      return {
+        success: false,
+        error: 'Utilisateur ou secret 2FA introuvable',
+      }
+    }
+
+    // Vérifier le code 2FA
+    const isValid = await verifyTOTPCode(user.two_factor_secret, code)
+
+    if (!isValid) {
+      return {
+        success: false,
+        error: 'Code 2FA invalide',
+      }
+    }
+
+    // Mettre à jour la dernière connexion
+    await supabase
+      .from('admin_users')
+      .update({ last_login: new Date().toISOString() })
+      .eq('id', adminId)
+
+    // Retourner les informations de l'utilisateur (sans le hash)
+    const { password_hash, ...userData } = user
+
+    return {
+      success: true,
+      userId: user.id,
+      email: user.email,
+      user: userData,
+    }
+  } catch (error) {
+    console.error('Erreur vérification 2FA:', error)
+    return {
+      success: false,
+      error: error.message || 'Erreur de vérification 2FA',
+    }
+  }
+}
+
+/**
+ * Vérifie un code TOTP (Time-based One-Time Password)
+ * Compatible avec Google Authenticator
+ */
+const verifyTOTPCode = async (secretBase64, code) => {
+  try {
+    // Importer otplib pour vérifier le code TOTP
+    const { authenticator } = await import('otplib')
+    
+    // Convertir le secret base64 en base32 (format requis par otplib)
+    const secretBase32 = base64ToBase32(secretBase64)
+    
+    // Vérifier le code
+    const isValid = authenticator.check(code, secretBase32)
+    
+    return isValid
+  } catch (error) {
+    console.error('Erreur vérification TOTP:', error)
+    return false
+  }
+}
+
+/**
+ * Convertit un secret base64 en base32
+ */
+const base64ToBase32 = (secretBase64) => {
+  try {
+    const binaryString = atob(secretBase64)
+    const bytes = new Uint8Array(binaryString.length)
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i)
+    }
+    
+    const base32Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
+    let result = ''
+    let bits = 0
+    let value = 0
+    
+    for (let i = 0; i < bytes.length; i++) {
+      value = (value << 8) | bytes[i]
+      bits += 8
+      
+      while (bits >= 5) {
+        result += base32Chars[(value >>> (bits - 5)) & 31]
+        bits -= 5
+      }
+    }
+    
+    if (bits > 0) {
+      result += base32Chars[(value << (5 - bits)) & 31]
+    }
+    
+    while (result.length % 8 !== 0) {
+      result += '='
+    }
+    
+    return result
+  } catch (error) {
+    console.error('Erreur conversion base64 vers base32:', error)
+    return secretBase64
   }
 }
 

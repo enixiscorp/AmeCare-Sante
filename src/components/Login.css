@@ -155,6 +155,50 @@
   margin: 0;
 }
 
+.two-factor-group {
+  background: #edf2f7;
+  padding: 20px;
+  border-radius: 8px;
+  border: 2px solid #cbd5e0;
+}
+
+.two-factor-info {
+  font-size: 13px;
+  color: #4a5568;
+  margin: 8px 0 12px 0;
+  line-height: 1.5;
+}
+
+.two-factor-input {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 8px;
+  text-align: center;
+  font-family: 'Courier New', monospace;
+}
+
+.back-button {
+  margin-top: 12px;
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  color: #4a5568;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.back-button:hover:not(:disabled) {
+  background: #e2e8f0;
+  border-color: #a0aec0;
+}
+
+.back-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 @media (max-width: 480px) {
   .login-box {
     padding: 32px 24px;
