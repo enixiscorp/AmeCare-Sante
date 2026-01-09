@@ -44,6 +44,16 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
+  // Ignorer les requêtes chrome-extension, data:, blob:, etc.
+  const url = new URL(event.request.url)
+  if (url.protocol === 'chrome-extension:' || 
+      url.protocol === 'chrome:' || 
+      url.protocol === 'moz-extension:' ||
+      url.protocol === 'data:' ||
+      url.protocol === 'blob:') {
+    return
+  }
+
   // Stratégie Network First avec fallback au cache
   event.respondWith(
     fetch(event.request)
@@ -57,7 +67,16 @@ self.addEventListener('fetch', (event) => {
         const responseToCache = response.clone()
 
         caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache)
+          // Vérifier que la requête peut être mise en cache
+          try {
+            cache.put(event.request, responseToCache).catch(err => {
+              // Ignorer les erreurs de cache silencieusement
+              console.log('Erreur de cache ignorée:', err.message)
+            })
+          } catch (err) {
+            // Ignorer les erreurs de cache silencieusement
+            console.log('Erreur de cache ignorée:', err.message)
+          }
         })
 
         return response

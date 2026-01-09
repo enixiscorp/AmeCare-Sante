@@ -3,11 +3,39 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
+// Messages de débogage (uniquement en développement)
+if (import.meta.env.DEV) {
+  console.log('🔍 Variables d\'environnement Supabase:')
+  console.log('  VITE_SUPABASE_URL:', supabaseUrl ? '✅ Définie' : '❌ Non définie')
+  console.log('  VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✅ Définie (masquée)' : '❌ Non définie')
+  
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('❌ ERREUR: Variables d\'environnement Supabase manquantes!')
+    console.error('💡 Solution:')
+    console.error('   1. Créez un fichier .env à la racine du projet')
+    console.error('   2. Ajoutez: VITE_SUPABASE_URL=https://votre-projet.supabase.co')
+    console.error('   3. Ajoutez: VITE_SUPABASE_ANON_KEY=votre_cle_anon')
+    console.error('   4. Redémarrez le serveur (npm run dev)')
+    console.error('   5. Ou exécutez: node scripts/create-env.js')
+  }
+}
+
 // Créer le client Supabase seulement si les variables sont définies
 let supabase = null
 
 if (supabaseUrl && supabaseAnonKey) {
-  supabase = createClient(supabaseUrl, supabaseAnonKey)
+  try {
+    supabase = createClient(supabaseUrl, supabaseAnonKey)
+    if (import.meta.env.DEV) {
+      console.log('✅ Client Supabase créé avec succès')
+    }
+  } catch (error) {
+    console.error('❌ Erreur lors de la création du client Supabase:', error)
+  }
+} else {
+  if (import.meta.env.DEV) {
+    console.warn('⚠️  Client Supabase non créé - variables d\'environnement manquantes')
+  }
 }
 
 // Fonction pour sauvegarder une facture dans Supabase

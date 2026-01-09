@@ -49,7 +49,16 @@ const Login = ({ onLogin }) => {
           
           onLogin()
         } else {
-          setError(result.error || 'Email ou mot de passe incorrect')
+          // Afficher un message plus détaillé si l'Edge Function n'est pas déployée
+          if (result.edgeFunctionNotDeployed) {
+            setError(
+              'L\'Edge Function n\'est pas déployée. ' +
+              'Pour déployer : Allez dans Supabase > Edge Functions > Créez "verify-password" ' +
+              'et copiez le code de supabase/functions/verify-password/index.ts'
+            )
+          } else {
+            setError(result.error || 'Email ou mot de passe incorrect')
+          }
         }
       }
     } catch (err) {

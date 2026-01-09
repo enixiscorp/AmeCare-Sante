@@ -21,9 +21,20 @@ export const authenticateUser = async (email, password) => {
 
     if (functionError) {
       console.error('Erreur Edge Function:', functionError)
+      
+      // Détecter si c'est une erreur 404 (fonction non déployée)
+      if (functionError.status === 404 || functionError.message?.includes('NOT_FOUND') || functionError.code === 'NOT_FOUND') {
+        return {
+          success: false,
+          error: 'L\'Edge Function verify-password n\'est pas encore déployée. Veuillez la déployer dans Supabase (voir DEPLOY_EDGE_FUNCTION.md)',
+          requires2FA: false,
+          edgeFunctionNotDeployed: true,
+        }
+      }
+      
       return {
         success: false,
-        error: 'Erreur de connexion. Veuillez vérifier que l\'Edge Function verify-password est déployée.',
+        error: 'Erreur de connexion. Veuillez vérifier que l\'Edge Function verify-password est déployée et configurée correctement.',
         requires2FA: false,
       }
     }
