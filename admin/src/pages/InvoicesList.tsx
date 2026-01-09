@@ -145,16 +145,24 @@ export default function InvoicesList() {
                       {invoice.client_email || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(invoice.created_at).toLocaleDateString('fr-FR', {
+                      {new Date(invoice.invoice_date || invoice.created_at).toLocaleDateString('fr-FR', {
                         day: '2-digit',
                         month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
+                        year: 'numeric'
                       })}
+                      <br />
+                      <span className="text-xs text-gray-400">
+                        Créée le {new Date(invoice.created_at).toLocaleDateString('fr-FR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                      {invoice.total_ttc.toFixed(2)} {invoice.currency}
+                      {parseFloat(String(invoice.total_ttc)).toFixed(2)} {invoice.currency || '€'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex gap-2">

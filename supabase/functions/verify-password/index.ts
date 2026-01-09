@@ -3,6 +3,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { compare as bcryptCompare } from 'https://deno.land/x/bcrypt@v0.4.1/mod.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,6 +19,13 @@ serve(async (req) => {
   try {
     const { email, password } = await req.json()
 
+    if (!email || !password) {
+      return new Response(
+        JSON.stringify({ error: 'Email et mot de passe requis' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -32,18 +40,17 @@ serve(async (req) => {
 
     if (error || !admin) {
       return new Response(
-        JSON.stringify({ error: 'Email ou mot de passe incorrect' }),
+        JSON.stringify({ success: false, error: 'Email ou mot de passe incorrect' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
     // Vérifier le mot de passe avec bcrypt
-    // Note: Vous devez installer bcrypt pour Deno ou utiliser une autre méthode
-    const isValid = await verifyPassword(password, admin.password_hash)
+    const isValid = await bcryptCompare(password, admin.password_hash)
 
     if (!isValid) {
       return new Response(
-        JSON.stringify({ error: 'Email ou mot de passe incorrect' }),
+        JSON.stringify({ success: false, error: 'Email ou mot de passe incorrect' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -59,20 +66,14 @@ serve(async (req) => {
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Erreur dans verify-password:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ success: false, error: error.message || 'Erreur serveur' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })
-
-// Fonction pour vérifier le mot de passe
-async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  // Utiliser bcrypt ou une autre méthode de hash
-  // Pour l'instant, simplifié (à implémenter avec bcrypt)
-  return true // TODO: Implémenter la vérification réelle
-}
 
 
 

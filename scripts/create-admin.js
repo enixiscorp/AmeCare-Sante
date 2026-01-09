@@ -13,7 +13,7 @@ const bcrypt = require('bcryptjs')
 // ⚠️ REMPLACEZ CES VALEURS PAR LES VÔTRES
 const SUPABASE_URL = 'https://wjpejsotrzovxvswlwkc.supabase.co'
 const SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqcGVqc290cnpvdnh2c3dsd2tjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzU2MTA5OCwiZXhwIjoyMDgzMTM3MDk4fQ.BKeOCEPMr6NzhgXnl8KGImp0XBHUY29DEcTbWfGFyZQ'
-const ADMIN_EMAIL = 'contacteccorp@gmail.com
+const ADMIN_EMAIL = 'contacteccorp@gmail.com'
 const ADMIN_PASSWORD = '@dmincare26**' // ⚠️ Changez ce mot de passe par un mot de passe fort
 // Créer le client Supabase avec la service_role key (accès complet)
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)

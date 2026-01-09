@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase, Invoice } from '../lib/supabase'
-import { FileText, Users, TrendingUp, DollarSign } from 'lucide-react'
+import { FileText, Users, TrendingUp, DollarSign, Eye } from 'lucide-react'
 
 export default function Dashboard() {
+  const navigate = useNavigate()
   const [stats, setStats] = useState({
     totalInvoices: 0,
     totalRevenue: 0,
@@ -18,24 +20,26 @@ export default function Dashboard() {
 
   const loadDashboardData = async () => {
     try {
-      // Charger les statistiques
+      // Charger toutes les factures (pas seulement 100)
       const { data: invoices, error } = await supabase
         .from('invoices')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(100)
 
       if (error) throw error
 
       // Calculer les statistiques
       const totalInvoices = invoices?.length || 0
-      const totalRevenue = invoices?.reduce((sum, inv) => sum + (inv.total_ttc || 0), 0) || 0
+      const totalRevenue = invoices?.reduce((sum, inv) => sum + (parseFloat(String(inv.total_ttc)) || 0), 0) || 0
       const uniqueClients = new Set(invoices?.map(inv => inv.client_email).filter(Boolean)).size
       
-      const today = new Date().toISOString().split('T')[0]
-      const invoicesToday = invoices?.filter(inv => 
-        inv.created_at?.startsWith(today)
-      ).length || 0
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const invoicesToday = invoices?.filter(inv => {
+        const invDate = new Date(inv.created_at)
+        invDate.setHours(0, 0, 0, 0)
+        return invDate.getTime() === today.getTime()
+      }).length || 0
 
       setStats({
         totalInvoices,
@@ -48,6 +52,7 @@ export default function Dashboard() {
       setRecentInvoices(invoices?.slice(0, 10) || [])
     } catch (error) {
       console.error('Erreur lors du chargement:', error)
+      alert('Erreur lors du chargement des données. Vérifiez votre connexion à Supabase.')
     } finally {
       setLoading(false)
     }
@@ -94,8 +99,14 @@ export default function Dashboard() {
 
       {/* Dernières factures */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
           <h2 className="text-xl font-semibold">Dernières factures générées</h2>
+          <button
+            onClick={() => navigate('/invoices')}
+            className="text-primary hover:text-primary/80 text-sm font-medium"
+          >
+            Voir toutes les factures →
+          </button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -103,15 +114,17 @@ export default function Dashboard() {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">N° Facture</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Montant TTC</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Utilisateur</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {recentInvoices.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                     Aucune facture générée pour le moment
                   </td>
                 </tr>
@@ -125,13 +138,29 @@ export default function Dashboard() {
                       {invoice.client_name || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(invoice.invoice_date).toLocaleDateString('fr-FR')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                      {invoice.total_ttc.toFixed(2)} {invoice.currency}
+                      {invoice.client_email || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {invoice.user_id.substring(0, 8)}...
+                      {new Date(invoice.invoice_date).toLocaleDateString('fr-FR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                      })}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                      {parseFloat(String(invoice.total_ttc)).toFixed(2)} {invoice.currency || '€'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <span className="font-mono text-xs">{invoice.user_id.substring(0, 8)}...</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <button
+                        onClick={() => navigate(`/invoices?invoice=${invoice.id}`)}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Voir les détails"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
                     </td>
                   </tr>
                 ))

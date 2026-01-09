@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 import { verifyAdminPassword } from './supabaseFunctions'
 import { verify2FACode as verify2FACodeUtil } from './twoFactorAuth'
+import * as bcrypt from 'bcryptjs'
 
 export interface LoginCredentials {
   email: string
@@ -14,7 +15,7 @@ export const authenticateAdmin = async (credentials: LoginCredentials) => {
     const result = await verifyAdminPassword(credentials.email, credentials.password)
     
     if (!result.success) {
-      throw new Error('Email ou mot de passe incorrect')
+      throw new Error(result.error || 'Email ou mot de passe incorrect')
     }
 
     const admin = result.admin
@@ -40,7 +41,7 @@ export const authenticateAdmin = async (credentials: LoginCredentials) => {
 
     return { success: true, admin }
   } catch (error: any) {
-    // Fallback : si l'Edge Function n'est pas disponible, utiliser la méthode directe
+    // Fallback : si l'Edge Function n'est pas disponible, utiliser la méthode directe avec bcrypt côté client
     try {
       const { data: admin, error } = await supabase
         .from('admin_users')
@@ -52,8 +53,13 @@ export const authenticateAdmin = async (credentials: LoginCredentials) => {
         throw new Error('Email ou mot de passe incorrect')
       }
 
-      // Note: La vérification du mot de passe devrait se faire côté serveur
-      // Pour le développement, vous pouvez temporairement stocker le hash et le vérifier
+      // Vérifier le mot de passe avec bcrypt côté client (fallback)
+      // Note: En production, préférez toujours utiliser l'Edge Function
+      const isValidPassword = bcrypt.compareSync(credentials.password, admin.password_hash)
+      
+      if (!isValidPassword) {
+        throw new Error('Email ou mot de passe incorrect')
+      }
       
       if (admin.two_factor_enabled && admin.two_factor_secret) {
         if (!credentials.twoFactorCode) {
@@ -71,7 +77,9 @@ export const authenticateAdmin = async (credentials: LoginCredentials) => {
         .update({ last_login: new Date().toISOString() })
         .eq('id', admin.id)
 
-      return { success: true, admin }
+      // Retourner admin sans le password_hash
+      const { password_hash, ...adminData } = admin
+      return { success: true, admin: adminData }
     } catch (fallbackError: any) {
       throw new Error(fallbackError.message || 'Erreur d\'authentification')
     }

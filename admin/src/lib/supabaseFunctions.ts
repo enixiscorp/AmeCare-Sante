@@ -9,10 +9,20 @@ export const verifyAdminPassword = async (email: string, password: string) => {
       body: { email, password },
     })
 
-    if (error) throw error
+    if (error) {
+      // Si l'Edge Function n'est pas disponible, retourner une erreur pour déclencher le fallback
+      throw error
+    }
+    
+    // Si data contient success: false, retourner l'erreur
+    if (data && !data.success) {
+      return data // Retourner l'objet avec success: false et error
+    }
+    
     return data
   } catch (error: any) {
-    throw new Error(error.message || 'Erreur de vérification')
+    // Re-lancer l'erreur pour que le fallback puisse être déclenché
+    throw error
   }
 }
 
