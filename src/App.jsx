@@ -80,7 +80,7 @@ const getInitialInvoiceNumber = () => {
   return generateInvoiceNumber()
 }
 
-function App() {
+function App({ onLogout }) {
   const [invoiceData, setInvoiceData] = useState(() => {
     // Charger la facture sauvegardée ou créer une nouvelle
     const saved = loadCurrentInvoice()
@@ -461,6 +461,19 @@ function App() {
           </button>
           <button className="history-btn" onClick={() => setShowHistory(!showHistory)} title="Historique">
             📚
+          </button>
+          {/* Bouton de déconnexion */}
+          <button 
+            className="logout-btn" 
+            onClick={onLogout || (() => {
+              localStorage.removeItem('amecare_user_token')
+              localStorage.removeItem('amecare_user_email')
+              localStorage.removeItem('amecare_user_id')
+              window.location.href = '/login'
+            })} 
+            title="Déconnexion"
+          >
+            🚪
           </button>
           {/* Boutons admin uniquement visibles en mode admin (accès secret uniquement) */}
           {adminMode && (
