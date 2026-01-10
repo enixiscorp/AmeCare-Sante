@@ -1,5 +1,5 @@
 // Edge Function Supabase pour vérifier le mot de passe admin
-// Compatible avec Supabase Edge Functions
+// Version alternative avec meilleure gestion d'erreur
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -10,7 +10,6 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -30,7 +29,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Récupérer l'admin
     const { data: admin, error } = await supabaseAdmin
       .from('admin_users')
       .select('*')
@@ -45,9 +43,22 @@ serve(async (req) => {
     }
 
     // Vérifier le mot de passe avec bcrypt
-    // Utiliser bcrypt compatible avec Deno Edge Functions
-    const { compare } = await import('https://deno.land/x/bcrypt@v0.4.1/mod.ts')
-    const isValid = await compare(password, admin.password_hash)
+    let isValid = false
+    try {
+      // Essayer d'importer bcrypt
+      const bcryptModule = await import('https://deno.land/x/bcrypt@v0.4.1/mod.ts')
+      isValid = await bcryptModule.compare(password, admin.password_hash)
+    } catch (bcryptError: any) {
+      console.error('Erreur import bcrypt:', bcryptError)
+      // Si bcrypt ne fonctionne pas, essayer une alternative
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Erreur de vérification. Veuillez vérifier les logs Supabase.' 
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     if (!isValid) {
       return new Response(
@@ -56,7 +67,6 @@ serve(async (req) => {
       )
     }
 
-    // Retourner les informations admin (sans le hash)
     const { password_hash, ...adminData } = admin
 
     return new Response(
@@ -70,15 +80,12 @@ serve(async (req) => {
   } catch (error: any) {
     console.error('Erreur dans verify-password:', error)
     return new Response(
-      JSON.stringify({ success: false, error: error.message || 'Erreur serveur' }),
+      JSON.stringify({ 
+        success: false, 
+        error: error.message || 'Erreur serveur',
+        details: error.toString()
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })
-
-
-
-
-
-
-

@@ -1,5 +1,5 @@
-// Edge Function Supabase pour vérifier le mot de passe admin
-// Compatible avec Supabase Edge Functions
+// Code de test avec logs détaillés - Copiez ceci dans Supabase
+// Cela nous aidera à identifier où se produit l'erreur "Worker is not defined"
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -10,13 +10,19 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS
+  console.log('=== DÉBUT DE LA FONCTION ===')
+  console.log('Méthode:', req.method)
+  
   if (req.method === 'OPTIONS') {
+    console.log('CORS preflight')
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
+    console.log('Parsing JSON...')
     const { email, password } = await req.json()
+    console.log('Email:', email)
+    console.log('Password présent:', !!password)
 
     if (!email || !password) {
       return new Response(
@@ -25,17 +31,22 @@ serve(async (req) => {
       )
     }
 
+    console.log('Création client Supabase...')
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
+    console.log('Client Supabase créé')
 
-    // Récupérer l'admin
+    console.log('Recherche admin dans la base...')
     const { data: admin, error } = await supabaseAdmin
       .from('admin_users')
       .select('*')
       .eq('email', email)
       .single()
+
+    console.log('Admin trouvé:', admin ? 'OUI' : 'NON')
+    console.log('Erreur:', error)
 
     if (error || !admin) {
       return new Response(
@@ -44,10 +55,13 @@ serve(async (req) => {
       )
     }
 
-    // Vérifier le mot de passe avec bcrypt
-    // Utiliser bcrypt compatible avec Deno Edge Functions
-    const { compare } = await import('https://deno.land/x/bcrypt@v0.4.1/mod.ts')
-    const isValid = await compare(password, admin.password_hash)
+    console.log('Import bcrypt...')
+    const bcrypt = await import('https://deno.land/x/bcrypt@v0.4.1/mod.ts')
+    console.log('bcrypt importé:', Object.keys(bcrypt))
+
+    console.log('Comparaison mot de passe...')
+    const isValid = await bcrypt.compare(password, admin.password_hash)
+    console.log('Résultat:', isValid)
 
     if (!isValid) {
       return new Response(
@@ -56,7 +70,7 @@ serve(async (req) => {
       )
     }
 
-    // Retourner les informations admin (sans le hash)
+    console.log('Préparation réponse...')
     const { password_hash, ...adminData } = admin
 
     return new Response(
@@ -68,17 +82,20 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error: any) {
-    console.error('Erreur dans verify-password:', error)
+    console.error('=== ERREUR CAPTURÉE ===')
+    console.error('Type:', error.constructor.name)
+    console.error('Message:', error.message)
+    console.error('Stack:', error.stack)
+    console.error('Erreur complète:', error)
+    
     return new Response(
-      JSON.stringify({ success: false, error: error.message || 'Erreur serveur' }),
+      JSON.stringify({ 
+        success: false, 
+        error: error.message || 'Erreur serveur',
+        type: error.constructor.name,
+        details: String(error)
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })
-
-
-
-
-
-
-

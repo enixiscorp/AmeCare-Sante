@@ -1,5 +1,5 @@
 // Edge Function Supabase pour vérifier le mot de passe admin
-// Compatible avec Supabase Edge Functions
+// Code final corrigé - Copiez ce code dans Supabase
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -45,9 +45,8 @@ serve(async (req) => {
     }
 
     // Vérifier le mot de passe avec bcrypt
-    // Utiliser bcrypt compatible avec Deno Edge Functions
-    const { compare } = await import('https://deno.land/x/bcrypt@v0.4.1/mod.ts')
-    const isValid = await compare(password, admin.password_hash)
+    const bcrypt = await import('https://deno.land/x/bcrypt@v0.4.1/mod.ts')
+    const isValid = await bcrypt.compare(password, admin.password_hash)
 
     if (!isValid) {
       return new Response(
@@ -75,10 +74,3 @@ serve(async (req) => {
     )
   }
 })
-
-
-
-
-
-
-

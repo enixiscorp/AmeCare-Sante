@@ -1,15 +1,29 @@
-// Edge Function Supabase pour vérifier le mot de passe admin
-// Compatible avec Supabase Edge Functions
+# ✅ Code Edge Function Corrigé
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+## 🔧 Correction de l'erreur "Worker is not defined"
+
+L'erreur venait de l'utilisation de l'ancienne API Deno. Voici le code corrigé à utiliser :
+
+---
+
+## 📋 Code Complet Corrigé
+
+Copiez ce code dans votre Edge Function Supabase :
+
+```typescript
+// Edge Function Supabase pour vérifier le mot de passe admin
+// Compatible avec la nouvelle API Supabase Edge Functions
+
+import "jsr:@supabase/functions-js/edge-runtime.d.ts"
+import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { compare as bcryptCompare } from 'https://deno.land/x/bcrypt@v0.4.1/mod.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -45,9 +59,7 @@ serve(async (req) => {
     }
 
     // Vérifier le mot de passe avec bcrypt
-    // Utiliser bcrypt compatible avec Deno Edge Functions
-    const { compare } = await import('https://deno.land/x/bcrypt@v0.4.1/mod.ts')
-    const isValid = await compare(password, admin.password_hash)
+    const isValid = await bcryptCompare(password, admin.password_hash)
 
     if (!isValid) {
       return new Response(
@@ -75,10 +87,50 @@ serve(async (req) => {
     )
   }
 })
+```
 
+---
 
+## 🔄 Étapes pour Corriger
 
+### 1. Ouvrir l'éditeur de la fonction
 
+1. Dans Supabase, allez dans **Edge Functions**
+2. Cliquez sur votre fonction `verify-password`
 
+### 2. Remplacer le code
 
+1. **Sélectionnez tout le code** dans l'éditeur (Ctrl+A)
+2. **Supprimez-le** (Delete)
+3. **Copiez le code corrigé** ci-dessus
+4. **Collez-le** dans l'éditeur (Ctrl+V)
 
+### 3. Sauvegarder et déployer
+
+1. Cliquez sur **"Save"**
+2. Cherchez le bouton **"Deploy function"** ou **"Deploy"** en bas de l'éditeur
+3. Cliquez dessus pour déployer
+
+### 4. Tester à nouveau
+
+1. Allez dans l'onglet **"Test"** ou **"Testing"**
+2. Testez avec :
+   ```json
+   {
+     "email": "contacteccorp@gmail.com",
+     "password": "@dmincare26**"
+   }
+   ```
+3. Vous devriez maintenant recevoir une réponse (pas d'erreur 500)
+
+---
+
+## ✅ Changements Effectués
+
+1. ✅ Remplacement de `serve` par `Deno.serve` (nouvelle API)
+2. ✅ Mise à jour des imports pour utiliser JSR (JavaScript Registry)
+3. ✅ Ajout du type definition pour l'Edge Runtime
+
+---
+
+**Une fois le code corrigé et redéployé, l'erreur "Worker is not defined" devrait disparaître !** 🎉
